@@ -2,8 +2,10 @@
 
 Uludağ Üniversitesi Bil.Müh/BÖTE bölümlerinde açılan Rust ile Sistem Programlama dersine ait örnek kodlar ve notların yer aldığı repodur.
 
-- [x] Lesson 00 : Hello World ve Temel Veri Türleri
-- [ ] Lesson 01 : 
+- [Rust ile Sistem Programlama](#programming-with-rust)
+  - [Ders 00 - Hello World Uygulaması ve Temel Veri Türleri](#ders-00-hello-world-uygulaması-ve-temel-veri-türleri)
+- [Yardımcı Kaynaklar](#yardımcı-kaynaklar)
+
 
 # Ders 00: Hello World Uygulaması ve Temel Veri Türleri
 
@@ -293,3 +295,13 @@ Bu derste Rust dilinin temel veri türlerine yer verilmiş olup aşağıdaki kon
 ## Tavsiye Okumalar
 
 - [Rust ve Güvenli Bellek Yönetimi Hakkında](https://www.buraksenyurt.com/post/rust-ve-guvenli-bellek-yonetimi-hakkinda)
+
+## Yardımcı Kaynaklar
+
+- [Resmi rust kitabı](https://doc.rust-lang.org/book/)
+- [Örneklerle Rust](https://doc.rust-lang.org/stable/rust-by-example/)
+- [Birlikte Rust Öğrenelim Video Serisi](https://www.youtube.com/playlist?list=PLY-17mI_rla4zcAQtUsolk6G5bfbQAdYZ)
+- [Installation](https://www.rust-lang.org/tools/install)
+- [Jet Brains Rust Rover](https://www.jetbrains.com/rust/)
+- [Visual Studio Code](https://code.visualstudio.com/download)
+- [Rust Paket Yönetim Sistemi -Crates.io](https://crates.io/)
