@@ -7,6 +7,10 @@
     Çalıştırmak için
 
     cargo run
+
+    Build etmek için
+
+    cargo build
 */
 
 // main executable/binary olarak giriş noktasıdır
@@ -81,7 +85,7 @@ fn main() {
     // Bir slice belirlerken bellekte ne kadar yer tutacağı bilinmez
     // Bu nedenle heap'teki bellek alanının belirli bir dilimini işaret eden bir referans ile çalışılır
     // (O nedenle & konuldu. & koymadan deneyelim)
-    let range = &locations[..=4]; // slice(dilim) ilk baştan itibaren dördündü indis dahil beş elemanı alır
+    let _range = &locations[..=4]; // slice(dilim) ilk baştan itibaren dördündü indis dahil beş elemanı alır
     let range = &locations[3..6];
     println!("{:?}", range);
 
@@ -102,7 +106,6 @@ fn main() {
 
     let konnichiwa = "\u{3053}\u{3093}\u{306B}\u{3061}\u{306F}";
     println!("{}", konnichiwa);
-
 }
 
 // Program yaşadığı sürece değeri değişmeyecek değişkenler için const kullanılabilir.
