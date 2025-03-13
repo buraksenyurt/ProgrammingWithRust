@@ -39,14 +39,20 @@ fn main() {
             print_cwd();
         }
         "-v" | "-var" => {
-            if args.len() < 3 {
+            // Fonksiyon dönüşünde bir Err varsa
+            if let Err(_e) = check_key_arguments(&args) {
                 print_help();
                 process::exit(1);
             }
+
             match print_variable(&args[2]) {
                 Ok(value) => println!("Value is {}", value),
                 Err(e) => {
-                    eprintln!("Error {:?}", e);
+                    match e {
+                        SyscoError::WrongArgumentCount => eprintln!("Invalid argument count"),
+                        SyscoError::WrongVariable(v) => eprintln!("Invalid variable: {}", v),
+                    }
+                    // eprintln!("Error {:?}", e);
                     // SysycoError nesnesinin içeriğini eprintln! makrosunda gösterebilmek için
                     // Debug trait'i derive direktifi ile implemente edilmiştir.
                 }
@@ -148,6 +154,18 @@ fn print_cwd() {
 //         eprintln!("Key '{}' not found", key);
 //     }
 // }
+
+// Bu fonksiyon Vec<String> türünden bir parametre alır ama bunu referans olarak alır.
+// Dolayısıyla bütün vektör kopyalanmaz, pointer gelir.
+// Fonksiyon yine bir Result dönmekte. Örneğin argüman sayısı 3 değilse buna uygun bir Error
+// nesnesi dönülür.
+// Her şey yolunda ise boş bir Ok dönülmektedir.
+fn check_key_arguments(args: &Vec<String>) -> Result<(), SyscoError> {
+    if args.len() != 3 {
+        return Err(SyscoError::WrongArgumentCount);
+    }
+    Ok(())
+}
 
 // Fonksiyonlardan geriye değer döndürebiliriz ancak garanti senaryolar için Result veya Option
 // gibi türlerden de yararlanabiliriz.

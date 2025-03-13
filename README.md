@@ -43,8 +43,10 @@ Rust dilinde **isimlendirme standartları _(Naming Conventions)_** da kod okunur
 - [Jet Brains Rust Rover](https://www.jetbrains.com/rust/)
 - [Visual Studio Code](https://code.visualstudio.com/download)
 - [Rust Paket Yönetim Sistemi -Crates.io](https://crates.io/)
+- [Rust Core Library](https://doc.rust-lang.org/core/index.html#the-rust-core-library)
 
 ## Örnek Uygulamalar
 
 - sysco; Basit bir terminal aracı. Lesson_01 dersinde kullanılan örneğin farklı bir sürümü.
 - sysco2; sysco programının daha iyileştirilmiş bir sürümü.
+
