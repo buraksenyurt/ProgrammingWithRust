@@ -6,7 +6,7 @@ use std::{env, process};
 
 fn main() {
     // Command line argümanlarına ulaşmak için args() metodu
-    // Sistem çevre değişkenlerine (key,value) çiftleri ulaimak için vars() metodu
+    // Sistem çevre değişkenlerine (key,value) çiftleri ulaşmak için vars() metodu
 
     // Komut satırından argüman alalım
     // --env yazılmışsa tüm çevre değişkenlerini alalım (--env args() üstünden yakalanabilir
@@ -38,10 +38,20 @@ fn main() {
         "-w" | "-cwd" => {
             print_cwd();
         }
-        "-u" | "-usr" => {
-            // TODO@buraksenyurt Bunu herhangibir key ile çalışacak hale getirelim
-            // cargo run -- -v USERNAME
-            print_user_name();
+        "-v" | "-var" => {
+            if args.len() < 3 {
+                print_help();
+                process::exit(1);
+            }
+            match print_variable(&args[2]) {
+                Ok(value) => println!("Value is {}", value),
+                Err(e) => {
+                    eprintln!("Error {:?}", e);
+                    // SysycoError nesnesinin içeriğini eprintln! makrosunda gösterebilmek için
+                    // Debug trait'i derive direktifi ile implemente edilmiştir.
+                }
+            }
+            //print_user_name();
         }
         _ => {
             // Yukarıdaki durumlar dışında bir kullanım söz konusu ise
@@ -97,7 +107,7 @@ fn print_help() {
     println!("  -h, -help : Display usage");
     println!("  -e, -env  : Show env values");
     println!("  -w, -cwd  : Show the current working directory");
-    println!("  -u, -usr  : Current root user\n");
+    println!("  -v, -var  : Show variable's value\n");
     println!("For details azon.com/sysco/help/readme.md");
 }
 
@@ -121,10 +131,40 @@ fn print_cwd() {
     }
 }
 
-// print_user_name aslında Environment key değerinin karşılı olan value bilgisi gösterecek
-// şekilde hata kontrolünü de ele alan bir fonksiyon haline getirilebilir.
-fn print_user_name() {
-    if let Ok(user_name) = env::var("USERNAME") {
-        println!("Username: {}", user_name);
+// // print_user_name aslında Environment key değerinin karşılı olan value bilgisi gösterecek
+// // şekilde hata kontrolünü de ele alan bir fonksiyon haline getirilebilir.
+// fn print_user_name() {
+//     if let Ok(user_name) = env::var("USERNAME") {
+//         println!("Username: {}", user_name);
+//     }
+// }
+
+// // print_user_name aslında Environment key değerinin karşılı olan value bilgisi gösterecek
+// // şekilde hata kontrolünü de ele alan bir fonksiyon haline getirilebilir.
+// fn print_variable(key: &str) {
+//     if let Ok(value) = env::var(key) {
+//         println!("{}\t{}", key, value);
+//     } else {
+//         eprintln!("Key '{}' not found", key);
+//     }
+// }
+
+// Fonksiyonlardan geriye değer döndürebiliriz ancak garanti senaryolar için Result veya Option
+// gibi türlerden de yararlanabiliriz.
+// Aşağıdaki fonksiyon eğer variable varsa değerini yoksa kendi tasarladığımız bir Error
+// nesnesini döndürür.
+// Dolayısıyla fonksiyonun kullanıldığı yerde mutlak suretle her iki durumun ele alınması gerekir.
+fn print_variable(key: &str) -> Result<String, SyscoError> {
+    if let Ok(value) = env::var(key) {
+        Ok(value) // İşlem başarılı ise Ok(T) şeklinde dönülür
+    } else {
+        Err(SyscoError::WrongVariable(key.to_string())) // Başarılı değilse Err(ErrorType) şeklinde dönülür
     }
+}
+
+#[derive(Debug)]
+// #[allow(dead_code)]
+enum SyscoError {
+    WrongVariable(String),
+    WrongArgumentCount,
 }
