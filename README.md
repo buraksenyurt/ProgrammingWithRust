@@ -8,6 +8,7 @@ yer aldığı repodur.
     - [Ders 00 - Hello World Uygulaması ve Temel Veri Türleri](./Lesson_00/README.md)
     - [Ders 01 - Metotlar](./Lesson_01/README.md)
     - [Ders 02 - Akış Kontrol İfadeleri ve Döngüler](./Lesson_02/README.md)
+    - [Ders 03: Struct Veri Türü](./Lesson_03/README.md)
 - [Yardımcı Kaynaklar](#yardımcı-kaynaklar)
 - [Örnek Uygulamalar](#örnek-uygulamalar)
 
