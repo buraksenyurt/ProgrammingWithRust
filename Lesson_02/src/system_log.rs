@@ -4,14 +4,14 @@
     Yukarıdaki log bilgisini temsil edecek bir veri modeli tasarlıyoruz.
     pub, public anlamındadır ve ilgili enstrümana modül dışından da erişilebileceğini belirtir
 */
-#[derive(Debug)] // Default formatta içeriğini yazdırmak için eklendi
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)] // Default formatta içeriğini yazdırmak için eklendi
 pub struct SystemLog {
     pub id: u32,
     pub level: String,
     pub description: String,
 }
-
-// TODO@buraksenyurt Zaman damgası için bir alan ekleyelim
 
 // Struct metotları impl blokların yazılır
 impl SystemLog {

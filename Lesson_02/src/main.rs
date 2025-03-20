@@ -27,6 +27,8 @@ fn main() {
         "10006|ERROR|Malicious request",
         "10007|INFO|Payment process has been completed",
     ];
+    // Her değişken başlangıç itibariyle immutable'dır
+    // Değiştirilebilir olması için mut keyword ile mutable hale getirilir.
     let mut system_logs = Vec::new();
 
     for line in log_lines {
