@@ -1,14 +1,12 @@
+use crate::data::*;
 use std::env;
 
-pub struct Command {
-    pub count: u32,
-    pub period: u8,
-}
 pub fn parse() -> Result<Command, String> {
     let _arguments: Vec<String> = env::args().collect();
 
     Ok(Command {
-        count: 10,
+        count: 100,
         period: 1,
+        metric: Metric::Both,
     })
 }
