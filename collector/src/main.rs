@@ -1,41 +1,40 @@
 use crate::data::Metric;
 use crate::terminal::parse;
+use crate::view::{print_all_metrics, print_cpu, print_memory, show_usages};
 use std::thread::sleep;
 use std::time::Duration;
 use sysinfo::System;
 
 mod data;
 mod terminal;
+mod view;
 
 fn main() {
-    if let Ok(cmd) = parse() {
-        let mut system = sysinfo::System::new();
-        system.refresh_all();
+    match parse() {
+        Ok(cmd) => {
+            println!("{}", cmd.to_string());
 
-        for _ in 0..cmd.count {
-            match cmd.metric {
-                Metric::Memory => {
-                    system.refresh_memory();
-                    println!("{} Mb", system.free_memory() / (1024 * 1024));
+            let mut system = System::new();
+            system.refresh_all();
+
+            for _ in 0..cmd.count {
+                match cmd.metric {
+                    Metric::Memory => {
+                        print_memory(&mut system);
+                    }
+                    Metric::Cpu => {
+                        print_cpu(&mut system);
+                    }
+                    Metric::Both => {
+                        print_all_metrics(&mut system);
+                    }
                 }
-                Metric::Cpu => {
-                    system.refresh_cpu_usage();
-                    print_metrics(&mut system);
-                }
-                Metric::Both => {
-                    system.refresh_cpu_usage();
-                    println!("{} Mb", system.free_memory() / (1024 * 1024));
-                    print_metrics(&mut system);
-                }
+                sleep(Duration::from_secs(cmd.period as u64));
             }
-            sleep(Duration::from_secs(cmd.period as u64));
+        }
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            show_usages();
         }
     }
-}
-
-fn print_metrics(system: &mut System) {
-    for (id, cpu) in system.cpus().iter().enumerate() {
-        print!("{} ({:2.2} %)", id, cpu.cpu_usage());
-    }
-    println!();
 }
