@@ -18,7 +18,6 @@
 
     kullanılabilir.
 */
-use std::env;
 use std::thread::sleep;
 use std::time::Duration;
 // Kodun devam edam kısımlarında kullanılan enstrümanların yer aldığı modüller use ile bildirilmelidir.
@@ -73,8 +72,8 @@ fn main() {
             let description = format!("{} ({:2.2}%)", idx, cpu.cpu_usage());
             let level = match cpu.cpu_usage() {
                 0.0..50.0 => Level::NORMAL,
-                50.0..75.0 => Level::HEAT,
-                75.0..90.0 => Level::BURN,
+                50.0..75.0 => Level::WARM,
+                75.0..90.0 => Level::BURNING,
                 90.0..100.0 => Level::ALARM,
                 _ => Level::UNKNOWN,
             };
@@ -100,8 +99,8 @@ fn main() {
 #[derive(Debug)]
 pub enum Level {
     NORMAL,
-    HEAT,
-    BURN,
+    WARM,
+    BURNING,
     ALARM,
     UNKNOWN,
 }

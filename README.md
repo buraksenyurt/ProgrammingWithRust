@@ -51,4 +51,5 @@ Rust dilinde **isimlendirme standartları _(Naming Conventions)_** da kod okunur
 
 - sysco; Basit bir terminal aracı. Lesson_01 dersinde kullanılan örneğin farklı bir sürümü.
 - sysco2; sysco programının daha iyileştirilmiş bir sürümü.
+- collector; sysinfo küfesini kullanarak cpu, memory metrikleri toplayan uygulama.
 
