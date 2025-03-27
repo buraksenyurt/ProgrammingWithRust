@@ -19,6 +19,7 @@ pub fn print_cpu(system: &mut System) {
 }
 
 pub fn show_usages() {
+    //todo@buraksenyurt json veya xml formatta çıktı işlevi ekleyelim
     println!(
         r"
     A tiny system metrics collector about
@@ -29,10 +30,12 @@ pub fn show_usages() {
     kind        : cpu or mem
     count       : Number of total metric
     period      : Number of periodic metric in seconds
+    format      : Output format (json / xml)
 
     Usages      :
 
-    -k cpu -c 100 -p 2 (Get cpu usage every 2 seconds for 100 times)
+    kind cpu count 100 period 2 format json
+    (Get cpu usage every 2 seconds for 100 times and save all into json/xml file)
     "
     );
 }

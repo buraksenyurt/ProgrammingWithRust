@@ -36,7 +36,6 @@ fn main() {
     let mut cpu_usages = Vec::new();
 
     // Sürekli metrik çekeceğimiz için bir sonsuz döngü işimizi görebilir
-    //TODO@buraksenyurt loop gibi sonsuz döngü yerine komut satırı argümanları ile çalıştıralım
     /*
         cargo run -- 100 2 cpu json
             (2 saniyede bir CPU kullanımlarından toplam 100 tane log çek ve json formatında yaz)
@@ -59,14 +58,16 @@ fn main() {
         /*
            Plan :
 
-           CPU kullanım değeri %50 ile %75 arasında olanlar için log seviye HEAT
-           CPU kullanım değeri %70 ile %90 arasında olanlar için log seviye BURN
+           CPU kullanım değeri %0 ile %50 arasında olanlar için log seviyesi NORMAL
+           CPU kullanım değeri %50 ile %75 arasında olanlar için log seviye WARM
+           CPU kullanım değeri %70 ile %90 arasında olanlar için log seviye BURNING
            CPU kullanım değeri %90 üstü olanlar için log seviye ALARM
-           diğer CPU kullanım değerleri için log seviye NORMAL
+           diğer CPU kullanım değerleri için log seviye UNKNOWN
 
            Bu planı uygulamak için pattern matchin'i aşağıdaki gibi kullandık
 
         */
+
         for (idx, cpu) in system.cpus().iter().enumerate() {
             // print!(" {} {:2.2}%", idx, cpu.cpu_usage());
             let description = format!("{} ({:2.2}%)", idx, cpu.cpu_usage());

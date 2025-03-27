@@ -4,6 +4,8 @@ use std::env;
 pub fn parse() -> Result<Command, String> {
     let args: Vec<String> = env::args().collect();
     // println!("{:?}", args);
+
+    // early return
     if args.len() < 2 {
         return Err("Wrong number of arguments".to_string());
     }
