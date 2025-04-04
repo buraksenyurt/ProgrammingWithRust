@@ -10,6 +10,7 @@ yer aldığı repodur.
     - [Ders 02 - Akış Kontrol İfadeleri ve Döngüler](./Lesson_02/README.md)
     - [Ders 03 - Struct Veri Türü](./Lesson_03/README.md)
     - [Ders 04 - Ownership ve Borrowing Hakkında](./Lesson_04/README.md)
+    - [Ders 05 - Enum Veri Türü, Pattern Matching](./Lesson_05/README.md)
 - [Yardımcı Kaynaklar](#yardımcı-kaynaklar)
 - [Örnek Uygulamalar](#örnek-uygulamalar)
 
