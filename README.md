@@ -12,6 +12,7 @@ yer aldığı repodur.
     - [Ders 04 - Ownership ve Borrowing Hakkında](./Lesson_04/README.md)
     - [Ders 05 - Enum Veri Türü, Pattern Matching](./Lesson_05/README.md)
     - [Ders 06 - Lifetime(Yaşam Ömrü) Kavramı](./Lesson_06/README.md)
+    - [Ders 07 - Generic Türler](./Lesson_07/README.md)
 - [Yardımcı Kaynaklar](#yardımcı-kaynaklar)
 - [Örnek Uygulamalar](#örnek-uygulamalar)
 
