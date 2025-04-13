@@ -6,4 +6,5 @@ pub struct Drone<'a> {
     pub model: &'a str,
     pub energy_level: f32,
     pub location: Location<'a>,
+    pub is_alive: bool,
 }
