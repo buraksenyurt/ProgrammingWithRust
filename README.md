@@ -19,7 +19,7 @@ yer aldığı repodur.
     - [Ders 11 - Channels]()
     - [Ders 12 - Macros]()
     - [Destekleyici Bölümler]()
-        - [Birim Test]()
+        - [Birim Test](UnitTests.md)
         - [Hata Yönetimi]()
 - [Yardımcı Kaynaklar](#yardımcı-kaynaklar)
 - [Örnek Uygulamalar](#örnek-uygulamalar)
