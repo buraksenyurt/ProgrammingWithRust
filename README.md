@@ -20,7 +20,7 @@ yer aldığı repodur.
     - [Ders 12 - Macros]()
     - [Destekleyici Bölümler]()
         - [Birim Test](UnitTests.md)
-        - [Hata Yönetimi]()
+        - [Hata Yönetimi](ErrorHandling.md)
 - [Yardımcı Kaynaklar](#yardımcı-kaynaklar)
 - [Örnek Uygulamalar](#örnek-uygulamalar)
 
