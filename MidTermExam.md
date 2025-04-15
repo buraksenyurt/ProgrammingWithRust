@@ -143,9 +143,11 @@ pub enum Level {
 
 Ayrıca bu enum yapısına **to_string** isimli bir metot ekleyip seviyeye göre şu ifadelerin döndürülmesini istiyoruz.
 
+```text
 Level::BURNING → "Aşırı kullanım!"  
 Level::NORMAL → "Her şey yolunda."  
 Diğer tüm durumlar → "Dikkat edilmesi gerekiyor."
+```
 
 Bu durumları ele almak için **pattern match** ifadesi kullanmak biçilmiş kaftan. Bu nedenle **to_string** metodu içerisinde **pattern match** kullanmaya karar verdiniz. Aşağıdaki şıklardan hangisi doğru ve idiomatic bir kullanım şeklidir.
 
