@@ -1,4 +1,4 @@
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Location<'a> {
     pub caption: &'a str, // 2nci Kat Güney Kanadı
     pub x: f32,
