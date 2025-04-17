@@ -1,4 +1,4 @@
-use data::{DRONE_MODELS, get_random_number};
+use data::{DRONE_MODELS, get_random_between, get_random_number};
 
 mod controller;
 mod data;
@@ -16,5 +16,10 @@ fn main() {
     for _ in 0..10 {
         let max_value = DRONE_MODELS.len();
         println!("{}", DRONE_MODELS[get_random_number(max_value)]);
+    }
+
+    for _ in 0..10 {
+        let number = get_random_between(10, 100);
+        println!("{number}");
     }
 }

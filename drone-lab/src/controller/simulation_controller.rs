@@ -13,14 +13,14 @@ impl<'a> SimulationController<'a> {
         for i in 0..drone_count {
             let model = DRONE_MODELS[get_random_number(DRONE_MODELS.len())];
             self.drones.push(Drone {
-                id: 1,
+                id: i as u32,
                 energy_level: 100.0,
                 model,
                 is_alive: true,
                 location: Location {
-                    x: 0.0,
-                    y: 0.0,
-                    z: 0.0,
+                    x: get_random_between(1, 100) as f32,
+                    y: get_random_between(1, 100) as f32,
+                    z: get_random_between(1, 100) as f32,
                     caption: "",
                 },
             })
