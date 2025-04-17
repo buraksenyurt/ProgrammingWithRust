@@ -1,4 +1,5 @@
-use crate::model::{Drone, Location};
+use crate::data::*;
+use crate::model::*;
 
 pub struct SimulationController<'a> {
     drones: Vec<Drone<'a>>,
@@ -10,10 +11,11 @@ impl<'a> SimulationController<'a> {
     }
     pub fn load(&mut self, drone_count: i32) -> bool {
         for i in 0..drone_count {
+            let model = DRONE_MODELS[get_random_number(DRONE_MODELS.len())];
             self.drones.push(Drone {
                 id: 1,
                 energy_level: 100.0,
-                model: "MODEL X",
+                model,
                 is_alive: true,
                 location: Location {
                     x: 0.0,
