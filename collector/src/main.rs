@@ -12,7 +12,7 @@ mod view;
 fn main() {
     match parse() {
         Ok(cmd) => {
-            println!("{}", cmd.to_string());
+            println!("{cmd}");
 
             let mut system = System::new();
             system.refresh_all();

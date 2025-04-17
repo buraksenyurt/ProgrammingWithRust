@@ -49,6 +49,8 @@ fn main() {
     let error_logs = filter_error_logs(&system_logs, 3, Order::Ascending);
     println!("Error logs\n {:#?}", error_logs);
 }
+
+#[allow(dead_code)]
 enum Order {
     Ascending,
     Descending,
@@ -74,7 +76,7 @@ enum Order {
 */
 
 //TODO@buraksenyurt İyileştirme noktalarını tamamlayalım
-fn filter_error_logs(system_logs: &Vec<SystemLog>, count: u8, order: Order) -> Vec<&SystemLog> {
+fn filter_error_logs(system_logs: &Vec<SystemLog>, count: u8, _order: Order) -> Vec<&SystemLog> {
     let mut error_logs = Vec::new();
     let mut counter = 0;
 

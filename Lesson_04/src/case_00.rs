@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub fn run() {
     // message isimli değişken String türünden. (Heap üzerinde allocation söz konusu)
     let message = String::from("Houston! We have a problem");
@@ -7,6 +8,7 @@ pub fn run() {
     // message değişkenin sahipliği do_something'e geçtiği için  value borrowed here after move hatası alınır
 }
 
+#[allow(dead_code)]
 fn do_something(input: String) {
     println!("Incoming message; '{}'", input);
     // Bir değişkenin ömrü tanımlandığı scope sonlanınca biter(default)

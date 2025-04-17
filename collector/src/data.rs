@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 #[derive(Debug)]
 pub enum Metric {
     Cpu,
@@ -22,13 +24,25 @@ pub struct Command {
     pub metric: Metric,
 }
 
-impl Command {
-    pub fn to_string(&self) -> String {
-        format!(
+// impl Command {
+//     pub fn to_string(&self) -> String {
+//         format!(
+//             "Metric {} Count : {} Period : {} secs",
+//             self.metric.to_string(),
+//             self.count,
+//             self.period
+//         )
+//     }
+// }
+// Genel standart olarak yukarıdaki gibi durumlarda Display trait implemente edilir
+impl Display for Command {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "Metric {} Count : {} Period : {} secs",
             self.metric.to_string(),
             self.count,
-            self.period
+            self.period,
         )
     }
 }

@@ -25,20 +25,28 @@ fn main() {
         Aşağıdaki gibi.
     */
     let mut number = 23;
+    println!("The value of number is: {}", number);
     number = 24;
     // unsigned 8 bit integer olarak 86 değerini taşıyan point isimli bir değişken(variable)
     let point: u8 = 86;
 
     // Noktalı sayılarda varsayılan tür 64 bitlik floating point'tir
-    let pi = 3.1415;
+    // let pi = 3.1415;
+    let pi = std::f64::consts::PI;
     // Bu sefer 32 bit floating point
     let e: f32 = 2.22;
+    println!(
+        "Number: {} Point: {} Pi: {} And e is {}",
+        number, point, pi, e
+    );
 
     // Boolean tür tanımı
     let is_active = true;
+    println!("Is active? {}", is_active);
 
     // Karakter tipi örneği
     let first_letter = 'a';
+    println!("First letter is {}", first_letter);
 
     // tuple bir compound type olarak geçer
     // Farklı veri türlerinde setleri taşımak için kullanabiliriz.
@@ -54,12 +62,13 @@ fn main() {
     let height = 1960;
     println!("{}", height);
 
-    let (mut width, height) = (800, 600);
+    let (mut width, _height) = (800, 600);
     println!("İlk width değeri {}", width);
     width = 1280;
     println!("Width değiştirildi {}", width);
 
     let mut width_me = width;
+    println!("Width me value {}", width_me);
     width_me = 1000;
     println!("Width Me değeri {}", width_me);
     println!("Width değeri {}", width);
@@ -106,6 +115,8 @@ fn main() {
 
     let konnichiwa = "\u{3053}\u{3093}\u{306B}\u{3061}\u{306F}";
     println!("{}", konnichiwa);
+
+    println!("Max Width is {MAX_WIDTH}");
 }
 
 // Program yaşadığı sürece değeri değişmeyecek değişkenler için const kullanılabilir.

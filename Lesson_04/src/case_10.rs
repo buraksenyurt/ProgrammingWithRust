@@ -17,6 +17,7 @@ pub fn run() {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct Player {
     id: u32,
     title: String,

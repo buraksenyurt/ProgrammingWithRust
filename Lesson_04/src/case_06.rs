@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub fn run() {
     let mut message = "Houston".to_string();
     println!("{}", message);
@@ -5,6 +6,7 @@ pub fn run() {
     println!("{}", message);
 }
 
+#[allow(dead_code)]
 fn change(input: &mut String) {
     input.push_str("! We have a problem");
 }

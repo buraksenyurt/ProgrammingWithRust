@@ -1,11 +1,13 @@
 use crate::data::*;
 use crate::model::*;
 
+#[allow(dead_code)]
 pub struct SimulationController<'a> {
     drones: Vec<Drone<'a>>,
 }
 
-impl<'a> SimulationController<'a> {
+#[allow(dead_code)]
+impl SimulationController<'_> {
     pub fn new() -> Self {
         SimulationController { drones: Vec::new() }
     }

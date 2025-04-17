@@ -10,7 +10,7 @@ pub fn parse() -> Result<Command, String> {
         return Err("Wrong number of arguments".to_string());
     }
 
-    if args[1].to_string() != "kind" {
+    if args[1] != "kind" {
         return Err("Invalid kind".to_string());
     }
     if args[3] != "count" {

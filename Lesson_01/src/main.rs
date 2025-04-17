@@ -155,12 +155,11 @@ fn print_cwd() {
 //     }
 // }
 
-// Bu fonksiyon Vec<String> türünden bir parametre alır ama bunu referans olarak alır.
-// Dolayısıyla bütün vektör kopyalanmaz, pointer gelir.
+// Bu fonksiyon String türünden bir diziyi parametre olarak kullanır ama bunu referans olarak alır.
+// Dolayısıyla bütün dizi kopyalanmaz onun yerine bir pointer gelir.
 // Fonksiyon yine bir Result dönmekte. Örneğin argüman sayısı 3 değilse buna uygun bir Error
-// nesnesi dönülür.
-// Her şey yolunda ise boş bir Ok dönülmektedir.
-fn check_key_arguments(args: &Vec<String>) -> Result<(), SyscoError> {
+// nesnesi dönülür. Her şey yolunda ise boş bir Ok dönülmektedir.
+fn check_key_arguments(args: &[String]) -> Result<(), SyscoError> {
     if args.len() != 3 {
         return Err(SyscoError::WrongArgumentCount);
     }

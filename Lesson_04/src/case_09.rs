@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub fn run() {
     // let mut super_mario = Player {
     //     id: 1,
@@ -11,6 +12,7 @@ pub fn run() {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct Player<'level> {
     id: u32,
     title: &'level str,

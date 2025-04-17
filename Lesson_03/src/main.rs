@@ -106,6 +106,7 @@ pub enum Level {
     UNKNOWN,
 }
 #[derive(Debug)]
+#[allow(dead_code)]
 struct SystemLog {
     id: u32,
     // Senaryomuza göre time_stamp bilgisinin olup olmadığı belli değil

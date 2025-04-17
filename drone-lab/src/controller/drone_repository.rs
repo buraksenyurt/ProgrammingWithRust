@@ -2,6 +2,7 @@ use crate::model::Drone;
 
 pub struct DroneRepository;
 
+#[allow(dead_code)]
 impl DroneRepository {
     pub fn save(drone: Drone) -> Result<bool, SaveValidationError> {
         if drone.id == 0 {
@@ -15,6 +16,7 @@ impl DroneRepository {
 }
 
 #[derive(Debug, PartialEq)]
+#[allow(dead_code)]
 pub enum SaveValidationError {
     InvalidDroneId,
     WrongModelName,

@@ -1,6 +1,7 @@
 use crate::model::{Drone, Location};
 pub struct FlightController;
 
+#[allow(dead_code)]
 impl FlightController {
     pub fn check_status<'a>(drone: &'a Drone<'a>) -> DroneStatus<'a> {
         if !drone.is_alive {
@@ -17,6 +18,7 @@ impl FlightController {
     }
 }
 #[derive(Debug, PartialEq)]
+#[allow(dead_code)]
 pub enum DroneStatus<'a> {
     OutOffRange(Location<'a>),
     Offline,
