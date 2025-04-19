@@ -51,3 +51,37 @@ pub fn read_games_from_file() -> io::Result<Vec<String>> {
     }
     Ok(games)
 }
+
+/*
+    Bu metot games.data dosyasındaki içeriği alıp, satırları | işaretine göre ayrıştırıp
+    geriye Game türünden bir Vector nesnesi döndürür.
+*/
+pub fn read_games_to_vec() -> io::Result<Vec<Game>> {
+    let mut games = Vec::new();
+
+    for line in read_games_from_file()? {
+        let cols: Vec<&str> = line.split('|').collect();
+        if cols.len() != 3 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Beklenmeyen sütun sayısı: `{}`", line),
+            ));
+        }
+
+        let title = cols[0].to_string();
+        let year = cols[1]
+            .parse::<u16>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        let popularity = cols[2]
+            .parse::<f32>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+        games.push(Game {
+            title,
+            year,
+            popularity,
+        });
+    }
+
+    Ok(games)
+}
