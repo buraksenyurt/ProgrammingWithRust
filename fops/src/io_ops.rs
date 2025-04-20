@@ -1,7 +1,7 @@
 use crate::game::Game;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io;
-use std::io::{BufRead, Write, stdout};
+use std::io::{BufRead, BufReader, BufWriter, Write, stdout};
 /*
     Bu fonksiyon stdin yardımıyla bilgi okur.
     Örneğin terminalden oyun bilgisi girilebilir.
@@ -84,4 +84,64 @@ pub fn read_games_to_vec() -> io::Result<Vec<Game>> {
     }
 
     Ok(games)
+}
+
+/*
+    Aşağıdaki fonksiyon yine bir Game listesini alır ancak parametre olarak gelen
+    dosyaya kaydetmek için, BufWriter kullanılır.
+*/
+pub fn write_games_buffered(path: &str, games: &[Game]) -> io::Result<()> {
+    let file = File::create(path)?;
+    let mut writer = BufWriter::new(file);
+    for game in games {
+        writeln!(writer, "{}", game)?;
+    }
+    writer.flush()?;
+    Ok(())
+}
+
+/*
+    Bu fonksiyon path parametresi ile gelen dosya içeriğini okuyup
+    Game türünden bir vector olarak geriye döndürür.
+*/
+pub fn read_games_buffered_into_vec(path: &str) -> io::Result<Vec<Game>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let mut games = Vec::new();
+    for line in reader.lines() {
+        let line = line?;
+        if !line.is_empty() {
+            let cols: Vec<&str> = line.split('|').collect();
+            if cols.len() != 3 {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Beklenmeyen sütun sayısı: `{}`", line),
+                ));
+            }
+            let title = cols[0].to_string();
+            let year = cols[1]
+                .parse::<u16>()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let popularity = cols[2]
+                .parse::<f32>()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+            games.push(Game {
+                title,
+                year,
+                popularity,
+            });
+        }
+    }
+    Ok(games)
+}
+
+/*
+    Aşağıdaki fonksiyon ise parametre olarak gelen dosyayı Append modunda açıp
+    sonuna yine parametre olarak gelen game değişkenini ekler.
+*/
+pub fn append_game_to_file(path: &str, game: &Game) -> io::Result<()> {
+    let mut file = OpenOptions::new().append(true).create(true).open(path)?;
+    writeln!(file, "{}", game)?;
+    Ok(())
 }

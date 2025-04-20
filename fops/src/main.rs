@@ -1,4 +1,5 @@
 use crate::data::load_games;
+use crate::game::Game;
 use crate::io_ops::*;
 
 mod data;
@@ -30,6 +31,26 @@ fn main() -> std::io::Result<()> {
     for game in games {
         println!("{}", game);
     }
+
+    let games = load_games();
+    write_games_buffered("newGames.dat", &games)?;
+    let games = read_games_from_file()?;
+    for game in games {
+        println!("{}", game);
+    }
+
+    println!("\n\n");
+    let games = read_games_buffered_into_vec("newGames.dat")?;
+    for game in games {
+        println!("{}", game);
+    }
+
+    let shogun = Game {
+        title: "Shogun Shawdown".to_string(),
+        year: 2024,
+        popularity: 8.5,
+    };
+    append_game_to_file("games.dat", &shogun)?;
 
     Ok(())
 }
