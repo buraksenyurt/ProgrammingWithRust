@@ -5,6 +5,7 @@ use crate::io_ops::*;
 mod data;
 mod game;
 mod io_ops;
+mod std_ops;
 
 fn main() -> std::io::Result<()> {
     let mut classic_games = vec![
