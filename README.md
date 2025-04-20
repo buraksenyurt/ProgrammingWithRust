@@ -23,6 +23,7 @@ yer aldığı repodur.
     - [Destekleyici Bölümler]()
         - [Birim Test](UnitTests.md)
         - [Hata Yönetimi](ErrorHandling.md)
+        - [Temel I/O İşlemleri](./io.md)
 - [Yardımcı Kaynaklar](#yardımcı-kaynaklar)
 - [Örnek Uygulamalar](#örnek-uygulamalar)
 
@@ -66,4 +67,5 @@ Rust dilinde **isimlendirme standartları _(Naming Conventions)_** da kod okunur
 - sysco; Basit bir terminal aracı. Lesson_01 dersinde kullanılan örneğin farklı bir sürümü.
 - sysco2; sysco programının daha iyileştirilmiş bir sürümü.
 - collector; sysinfo küfesini kullanarak cpu, memory metrikleri toplayan uygulama.
-- drone-lab; konu tekrarı, birim testler, temel dosya I/O operasyonları
+- drone-lab; Konu tekrarı, birim testler, lifetimes kullanımları.
+- fops; Temel I/O işlemleri.
