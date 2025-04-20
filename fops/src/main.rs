@@ -1,10 +1,10 @@
 use crate::data::load_games;
+use crate::file_io_ops::*;
 use crate::game::Game;
-use crate::io_ops::*;
 
 mod data;
+mod file_io_ops;
 mod game;
-mod io_ops;
 mod std_ops;
 
 fn main() -> std::io::Result<()> {

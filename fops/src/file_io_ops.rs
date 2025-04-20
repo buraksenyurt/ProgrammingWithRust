@@ -46,7 +46,7 @@ pub fn write_games_to_file(games: &[Game]) -> io::Result<()> {
 pub fn read_games_from_file() -> io::Result<Vec<String>> {
     let mut games = Vec::new();
     let f = File::open("games.dat")?;
-    for line in io::BufReader::new(f).lines() {
+    for line in BufReader::new(f).lines() {
         games.push(line?);
     }
     Ok(games)

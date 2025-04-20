@@ -210,8 +210,185 @@ Buraya kadar ele aldığımız stdin ve stdout kullanımlarına ilişkin şunlar
 - **Unix/Linux** ortamlarında `|`, `>` ve `>>` operatörleri standart giriş-çıkış işlemlerinde, verilerin akışını
   yönetmek için kullanılır.
 
+---
+
 ## Temel Dosya I/O İşlemleri
 
 Aşağıdaki örneklerde dosya okuma ve yazma işlemleri farklı şekillerde ele alınmaktadır.
 
-_NotYetImplemented();_
+### Dosya Oluşturma ve İçerik Yazma _(create)_
+
+Aşağıdaki fonksiyon parametre olarak Game türünden bir dizi alır. Bu dizinin her bir elemanı için satır satır akan bir
+String içerik üretilir. Söz konusu içerik contents isimli değişkende toplanır. f değişkeni games.dat isimli bir dosyayı
+temsil eder. Dosya create metodu ile oluşturulur. Create metodu dosya yoksa yeni bir tane oluşturur ama varsa truncate
+işlemini icra eder, bir başka deyişle içeriğini sıfırlar.
+
+```rust
+pub fn write_games_to_file(games: &[Game]) -> io::Result<()> {
+    let mut contents = String::new();
+    for g in games {
+        contents.push_str(&g.to_string());
+        contents.push_str("\n");
+    }
+    let mut f = File::create("games.dat")?;
+    f.write_all(contents.as_bytes())?;
+    Ok(())
+}
+```
+
+### Dosya İçeriğini Okuma
+
+Aşağıdaki örnek kod **games.dat** isimli dosyanın içeriğini satır satır okuyarak **String** türünden bir vector'de
+toplar. Burada satır bazında okuma işlemi yapmak için **BufReader** nesnesi kullanılmıştır. **BufReader** esasında bu
+örnek için oldukça maliyetlidir. Genel olarak **TCP Stream**'lerin okunması gibi işlemlerde **BufReader** kullanmak daha
+mantıklıdır.
+
+```rust
+pub fn read_games_from_file() -> io::Result<Vec<String>> {
+    let mut games = Vec::new();
+    let f = File::open("games.dat")?;
+    for line in BufReader::new(f).lines() {
+        games.push(line?);
+    }
+    Ok(games)
+}
+```
+
+Yukarıdaki fonksiyondan yararlanılarak dosya içerisinde yer alan oyun bilgilerinin **|** işaretine göre ayrıştırılıp
+**Game** türünden bir **vector** halinde ele alınması da mümkündür. Bunun için aşağıdaki gibi bir fonksiyondan
+yararlanılabilir.
+
+```rust
+pub fn read_games_to_vec() -> io::Result<Vec<Game>> {
+    let mut games = Vec::new();
+
+    for line in read_games_from_file()? {
+        let cols: Vec<&str> = line.split('|').collect();
+        if cols.len() != 3 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Beklenmeyen sütun sayısı: `{}`", line),
+            ));
+        }
+
+        let title = cols[0].to_string();
+        let year = cols[1]
+            .parse::<u16>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        let popularity = cols[2]
+            .parse::<f32>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+        games.push(Game {
+            title,
+            year,
+            popularity,
+        });
+    }
+
+    Ok(games)
+}
+```
+
+Yukarıdaki iki operasyon tek bir metot haline de getirilebilir. İlk olarak path parametresi üzerinden gelen dosya
+açılmaya çalışılır. Operasyon sonrasında hata olması durumu söz konusudur ve bu **?** operatörü ile ele alınarak **error
+propagation** ile çağıran yere doğru gönderilir. Dosya içeriğini satır bazından okumak için **BufReader** nesnesi
+kullanılır. Bu nesne oluşturulurken bir file nesnesi aldığına dikkat edilmelidir. **BufReader** üzerinden ulaşılan lines
+metodu satır bazında okuma yapılmasını sağlar. Döngünün her iterasyonunda dosyadan bir satır okunur. Bu işlem okunabilir
+satır kalmayıncaya kadar devam eder. İlgili kontrol is_empty çağrısı ile gerçekleştirilmektedir. Game nesnesnin dosya
+içerisindeki tutuluş biçimine göre **|** işaretleri ile ayrılmış 3 kolon olması gerekmektedir. Bu durum kontrol edilir
+ve hatalı kolon olması halinde geriye bir Error döndürülür. Buradaki akış tamamen stratejiye bağlıdır. Hatalı kolonların
+olduğu satırları atlayarak devam etmek de bir seçenektir.
+
+Kolonlar elde edilikten sonra bazı dönüştürme işlemleri de icra edilir ve bunlarda da **error propagation** tekniği
+kullanılır.
+
+```rust
+pub fn read_games_buffered_into_vec(path: &str) -> io::Result<Vec<Game>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let mut games = Vec::new();
+    for line in reader.lines() {
+        let line = line?;
+        if !line.is_empty() {
+            let cols: Vec<&str> = line.split('|').collect();
+            if cols.len() != 3 {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Beklenmeyen sütun sayısı: `{}`", line),
+                ));
+            }
+            let title = cols[0].to_string();
+            let year = cols[1]
+                .parse::<u16>()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let popularity = cols[2]
+                .parse::<f32>()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+            games.push(Game {
+                title,
+                year,
+                popularity,
+            });
+        }
+    }
+    Ok(games)
+}
+```
+
+### Dosyaya Veri Yazma
+
+Bir dosyaya veri yazma işlemi aslında içeriğin bir byte array olarak aktarılmasından ibarettir. Aşağıdaki örnek
+fonksiyonu ele alalım.
+
+```rust
+pub fn write_games_to_file(games: &[Game]) -> io::Result<()> {
+    let mut contents = String::new();
+    for g in games {
+        contents.push_str(&g.to_string());
+        contents.push_str("\n");
+    }
+    let mut f = File::create("games.dat")?;
+    f.write_all(contents.as_bytes())?;
+    Ok(())
+}
+```
+
+Bu fonksiyon Game nesnelerinden oluşan bir diziyi parametre olarak alır. Her bir oyun değişkeni için içeriği | ile
+ayıran bir string üretilir ve bunlar contents isimli String değişkende toplanır. Satır bazında ayrıştırılarak tutulan
+içerik as_bytes metodu ile byte array'a çevrilip tek seferde games.dat isimli dosyaya yazdırılır.
+
+Yazma işlemi BufWriter enstrümanını ile de gerçekleştirilebilir. Aşağıdaki kod parçasında bu durum ele alınmaktadır. Çok
+büyük blokların tek seferde yazılmasından ziyade in-memory olarak tutulan içeriklerin küçük bloklar halinde yazılması
+adına daha verimlidir. Yazma operasyonu aynı kaynağa doğru ele alınır. Bir dosya veya network'e yazma en çok kullanılan
+senaryolardandır. Yazma işlemi tamamlandığında bellekte kalmış olabilecek veri kalıntılarının da tamamen aktarıldığından
+emin olmak gerekir. Bunun için flush komutu kullanılır.
+
+```rust
+pub fn write_games_buffered(path: &str, games: &[Game]) -> io::Result<()> {
+    let file = File::create(path)?;
+    let mut writer = BufWriter::new(file);
+    for game in games {
+        writeln!(writer, "{}", game)?;
+    }
+    writer.flush()?;
+    Ok(())
+}
+```
+
+### Var Olan Dosya İçeriklerine Ek Yapmak
+
+Çoğu zaman var olan dosya içeriklerine ilaveler yapılır. Söz gelimi log biriktiren dosyalar veya oyunun son durumunu
+tutan dosyalar bunlara örnek olarak verilebilir. Bu gibi senaryolarda **OpenOptions** türünü kullanarak dosyanın hangi
+modda oluşturulacağı belirtilebilir. Aşağıdaki örnekte path değişkeni üzerinden gelen dosyanın **append** modda
+açılacağı belirtilir. Buna göre dosyanın sonuna ekleme yapılacağı söylenir. Yukarıda gerçekleştirilen birçok operasyonda
+doğrudan File nesnesine erişmek yerine **OpenOptions** enstrümanı ile de ilerlenebilir.
+
+```rust
+pub fn append_game_to_file(path: &str, game: &Game) -> io::Result<()> {
+    let mut file = OpenOptions::new().append(true).create(true).open(path)?;
+    writeln!(file, "{}", game)?;
+    Ok(())
+}
+```
