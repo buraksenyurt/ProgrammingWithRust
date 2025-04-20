@@ -32,7 +32,7 @@ pub fn write_games_to_file(games: &[Game]) -> io::Result<()> {
     let mut contents = String::new();
     for g in games {
         contents.push_str(&g.to_string());
-        contents.push_str("\n");
+        contents.push('\n');
     }
     let mut f = File::create("games.dat")?;
     f.write_all(contents.as_bytes())?;
@@ -144,4 +144,53 @@ pub fn append_game_to_file(path: &str, game: &Game) -> io::Result<()> {
     let mut file = OpenOptions::new().append(true).create(true).open(path)?;
     writeln!(file, "{}", game)?;
     Ok(())
+}
+
+/*
+    Aşğıdaki fonksiyon games.dat dosyasında okuma ve Game türünden vektöre dönüştürm işini
+    iterasyon fonksiyonlarını kullanarak gerçekleştirir. Iterasyon fonksiyonları Higher- Order Functions
+    olarak da ifade edilebilir. Rust'ın bu yetkinliği Zero Cost Abstraction da sağlar. Yani normal for döngüleri ile
+    icra edilenler gibi herhangi bir çalışma zamanı performans kaybı söz konusu değildir.
+
+    Higher-Order Function'lar parametre olarak fonksiyon alan veya fonksiyon döndüren enstrümanlardır.
+    Fonksiyonel dillerde yer alan önemli özelliklerden birisidir.
+*/
+pub fn read_games_to_vec_with_hof() -> io::Result<Vec<Game>> {
+    read_games_from_file()?
+        .into_iter()
+        .map(|line| {
+            let cols: Vec<&str> = line.split('|').collect();
+            if cols.len() != 3 {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Beklenmeyen sütun sayısı: `{}`", line),
+                ));
+            }
+
+            let title = cols[0].to_string();
+            let year = cols[1]
+                .parse::<u16>()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let popularity = cols[2]
+                .parse::<f32>()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+            Ok(Game {
+                title,
+                year,
+                popularity,
+            })
+        })
+        .collect()
+}
+
+pub fn write_games_buffered_with_hof(path: &str, games: &[Game]) -> io::Result<()> {
+    let file = File::create(path)?;
+    let mut writer = BufWriter::new(file);
+
+    games
+        .iter()
+        .try_for_each(|game| writeln!(writer, "{}", game))?;
+
+    writer.flush()
 }

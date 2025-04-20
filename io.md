@@ -392,3 +392,60 @@ pub fn append_game_to_file(path: &str, game: &Game) -> io::Result<()> {
     Ok(())
 }
 ```
+
+### Iterator Fonksiyonlarını Kullanmak
+
+Rust'ın güçlü özelliklerinden birisi de Zero Cost Abstraction sağlayan Higher-Order Function setidir. Genellikle
+fonksiyonel dillerde fonksiyonları parametre olarak alan veya döndüren fonksiyonlar yaygın olarak kullanılır. Rust'ın
+iterasyon metotları sonrasında gelen birçok fonksiyon bu tanıma uyar. Dolayısıyla Rust'ın da Higher-Order Function
+desteği sağladığını söyleyebiliriz.
+
+Aşğıdaki fonksiyon games.dat dosyasından okuma ve Game türünden vektöre dönüştürme işlevini iterasyon fonksiyonlarını
+kullanarak gerçekleştirir. Örnekte bunlar map ve collect çağrılarıdır. Bu metotların çalışma zamanı maliyetleri yoktur.
+
+```rust
+pub fn read_games_to_vec_with_hof() -> io::Result<Vec<Game>> {
+    read_games_from_file()?
+        .into_iter()
+        .map(|line| {
+            let cols: Vec<&str> = line.split('|').collect();
+            if cols.len() != 3 {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Beklenmeyen sütun sayısı: `{}`", line),
+                ));
+            }
+
+            let title = cols[0].to_string();
+            let year = cols[1]
+                .parse::<u16>()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let popularity = cols[2]
+                .parse::<f32>()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+            Ok(Game {
+                title,
+                year,
+                popularity,
+            })
+        })
+        .collect()
+}
+```
+
+Bu örnekten hareketle file_io_ops modülündeki diğer metotlarda da benzer kullanımlar icra edilebilir. Örneğin yazma
+işlemini ele aldığımız fonksiyonu aşağıdaki gibi değiştirebiliriz.
+
+```rust
+pub fn write_games_buffered_with_hof(path: &str, games: &[Game]) -> io::Result<()> {
+    let file = File::create(path)?;
+    let mut writer = BufWriter::new(file);
+
+    games
+        .iter()
+        .try_for_each(|game| writeln!(writer, "{}", game))?;
+
+    writer.flush()
+}
+```

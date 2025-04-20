@@ -27,7 +27,7 @@ fn main() -> std::io::Result<()> {
         println!("{}", game);
     }
 
-    println!("\n\n");
+    println!("\nOyunları Vector İçerisine Okuma Sonuçları\n");
     let games = read_games_to_vec()?;
     for game in games {
         println!("{}", game);
@@ -40,8 +40,21 @@ fn main() -> std::io::Result<()> {
         println!("{}", game);
     }
 
-    println!("\n\n");
+    let games = load_games();
+    write_games_buffered_with_hof("newGames.dat", &games)?;
+    let games = read_games_from_file()?;
+    for game in games {
+        println!("{}", game);
+    }
+
+    println!("\nBufReader ile Okuma Sonuçları\n");
     let games = read_games_buffered_into_vec("newGames.dat")?;
+    for game in games {
+        println!("{}", game);
+    }
+
+    println!("\nHOF Tekniği ile Okuma Sonuçları\n");
+    let games = read_games_to_vec_with_hof()?;
     for game in games {
         println!("{}", game);
     }
