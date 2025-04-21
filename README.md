@@ -15,7 +15,7 @@ yer aldığı repodur.
     - [Ara Sınav](MidTermExam.md)
     - [Ders 07 - Generic Türler](./Lesson_07/README.md)
     - [Ders 08 - Traits](./Lesson_08/README.md)
-    - [Ders 09 - Closures]()
+    - [Ders 09 - Closures](./Lesson_09/README.md)
     - [Ders 10 - Smart Pointers]()
     - [Ders 11 - Threads]()
     - [Ders 12 - Channels]()
