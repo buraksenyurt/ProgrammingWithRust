@@ -7,22 +7,21 @@ pub fn log() -> impl FnMut(&Log) {
     let mut info_count = 0;
     move |l| {
         stdout()
-            .write(format!("{}\n", l.to_string()).as_bytes())
-            .unwrap();
+            .write_all(format!("{}\n", l).as_bytes())
+            .expect("Could not write to stdout");
         match l.level {
             Level::Error => error_count += 1,
             Level::Warn => warn_count += 1,
             Level::Info => info_count += 1,
-            _ => {}
         }
         stdout()
-            .write(
+            .write_all(
                 format!(
                     "Log Tracker: {} errors, {} warnings, {} infos\n",
                     error_count, warn_count, info_count
                 )
                 .as_bytes(),
             )
-            .unwrap();
+            .expect("Couldn't write to stdout");
     }
 }

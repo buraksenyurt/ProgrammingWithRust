@@ -1,6 +1,6 @@
 use crate::models::*;
 
-pub fn update_players_system<F>(world: &mut GameWorld, mut f: F)
+pub fn update_players_system<F>(world: &mut GameWorld, f: F)
 where
     F: Fn(&mut Player),
 {
