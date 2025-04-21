@@ -1,9 +1,5 @@
-#[derive(Debug)]
-pub struct Game {
-    pub title: String,
-    pub year: u16,
-    pub popularity: f32,
-}
+use crate::models::Game;
+
 pub fn print_games(games: &Vec<Game>) {
     for game in games {
         println!("{}, {}", game.year, game.title);

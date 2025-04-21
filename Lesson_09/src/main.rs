@@ -1,7 +1,9 @@
+mod logging;
 mod models;
 mod repository;
 mod systems;
 
+use crate::logging::log;
 use crate::models::*;
 use crate::systems::*;
 use repository::*;
@@ -71,4 +73,15 @@ fn main() {
         total_team_score += p.score;
     });
     println!("Total score after update: {}", total_team_score);
+
+    // FnMut döndüren log fonksiyonunun kullanımı
+    let mut logger = log();
+
+    logger(&Log::new(Level::Info, "Authentication Success".to_string()));
+    logger(&Log::new(Level::Error, "File Not Found".to_string()));
+    logger(&Log::new(Level::Error, "Login failed".to_string()));
+    logger(&Log::new(
+        Level::Warn,
+        "Response Time Decreasing".to_string(),
+    ));
 }
