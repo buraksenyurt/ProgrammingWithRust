@@ -25,12 +25,12 @@ Bu trait'ler bir anlamda C# tarafından gelenler için delegate türüne de benz
 
 ## Filtreleme ve Sıralama İşlemleri
 
-Takip eden örnekler Game türünden veriler içeren bir vector ile ilişkilidir. Örnek oyun bilgileri
-için [repository.rs](./src/repository.rs) dosyasına bakılabilir. Çok basit bir örnekle başlayalım. Oyunları yıllara göre
-sıralamak istediğimizi düşünelim. Normalde vector türleri belli bir key değerine göre sıralama işlemi için **sort_by_key
-** isimli metodu sağlar. Bu metod **FnMut(&T) -> K** davranışını uygulayan bir ifade bekler. Bir başka deyişle sıralama
-için kullanılacak anahtar alanı ele alacağı bir davranışa ihtiyaç duyar. Buna göre aşağıdaki gibi bir örnek
-yazılabilir.
+Takip eden örnekler farklı veri türlerini kullanır ve bunlar [models.rs](./src/models.rs) dosyasında yer almaktadır.
+Örnek oyun bilgileri içinse [repository.rs](./src/repository.rs) dosyasına bakılabilir. Çok basit bir örnekle
+başlayalım. Oyunları yıllara göre sıralamak istediğimizi düşünelim. Normalde vector türleri belli bir key değerine göre
+sıralama işlemi için **sort_by_key** isimli metodu sağlar. Bu metod **FnMut(&T) -> K** davranışını uygulayan bir ifade
+bekler. Bir başka deyişle sıralama için kullanılacak anahtar alanı ele alacağı bir davranışa ihtiyaç duyar. Buna göre
+aşağıdaki gibi bir örnek yazılabilir.
 
 ```rust
 mod repository;
@@ -237,4 +237,55 @@ fn main()
 
 ## Fonksiyonlardan Closure Döndürülmesi
 
-NotYetImplemented();
+Pek tabii fonksiyonlardan Fn, FnMut veya FnOnce davranışlarını uyarlayan fonksiyonlar da döndürülebilir. Örneğin
+sistemde üretilen log bilgilerini türlerine göre anında sayan bir senaryomuz olduğunu düşünelim. Log içeriğine göre bunu
+kullanan bir fonksiyon aşağıdaki gibi tasarlanabilir.
+
+```rust
+use crate::models::{Level, Log};
+use std::io::{Write, stdout};
+
+pub fn log() -> impl FnMut(&Log) {
+    let mut error_count = 0;
+    let mut warn_count = 0;
+    let mut info_count = 0;
+    move |l| {
+        stdout()
+            .write(format!("{}\n", l.to_string()).as_bytes())
+            .unwrap();
+        match l.level {
+            Level::Error => error_count += 1,
+            Level::Warn => warn_count += 1,
+            Level::Info => info_count += 1,
+            _ => {}
+        }
+        stdout()
+            .write(
+                format!(
+                    "Log Tracker: {} errors, {} warnings, {} infos\n",
+                    error_count, warn_count, info_count
+                )
+                    .as_bytes(),
+            )
+            .unwrap();
+    }
+}
+```
+
+log metodu geriye Log türünden referanslar alabilen **FnMut** türünden bir trait döndürmektedir. Fonksiyon ekrana log
+mesajını basarken bir yandan da seviyelere göre toplamları hesaplar. Bu fonksiyon aşağıdaki gibi kullanılabilir.
+
+```rust
+fn main()
+{
+    let mut logger = log();
+
+    logger(&Log::new(Level::Info, "Authentication Success".to_string()));
+    logger(&Log::new(Level::Error, "File Not Found".to_string()));
+    logger(&Log::new(Level::Error, "Login failed".to_string()));
+    logger(&Log::new(
+        Level::Warn,
+        "Response Time Decreasing".to_string(),
+    ));
+}
+```
