@@ -4,7 +4,11 @@ pub struct Game {
     pub year: u16,
     pub popularity: f32,
 }
-
+pub fn print_games(games: &Vec<Game>) {
+    for game in games {
+        println!("{}, {}", game.year, game.title);
+    }
+}
 pub fn load_games() -> Vec<Game> {
     vec![
         Game {

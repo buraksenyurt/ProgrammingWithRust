@@ -1,24 +1,20 @@
+mod models;
 mod repository;
+mod systems;
 
+use crate::models::*;
+use crate::systems::*;
 use repository::*;
 
 fn year_sorter(game: &Game) -> u16 {
     game.year
 }
 
-fn print_games(games: &Vec<Game>) {
-    for game in games {
-        println!("{}, {}", game.year, game.title);
-    }
-}
-
 fn main() {
-    let games = repository::load_games();
-
     let mut games = repository::load_games();
 
     // Yıla göre sıralama klasik fonksiyon ile
-    // games.sort_by_key(year_sorter);
+    games.sort_by_key(year_sorter);
 
     // Closure ile artan yıl sıralaması
     games.sort_by(|g1, g2| g1.year.cmp(&g2.year));
@@ -53,10 +49,10 @@ fn main() {
         ],
     };
 
-    let apply_gravity = |entity: &mut Player| {
-        entity.position.0 += entity.velocity.0 * 0.9;
-        entity.position.1 += entity.velocity.1 * 0.9;
-    };
+    // let apply_gravity = |entity: &mut Player| {
+    //     entity.position.0 += entity.velocity.0 * 0.9;
+    //     entity.position.1 += entity.velocity.1 * 0.9;
+    // };
 
     println!("Before Update: {:?}", world.players);
     // update_players_system(&mut world, apply_gravity);
@@ -75,35 +71,4 @@ fn main() {
         total_team_score += p.score;
     });
     println!("Total score after update: {}", total_team_score);
-}
-
-#[derive(Debug)]
-struct Player {
-    id: u32,
-    position: (f32, f32),
-    velocity: (f32, f32),
-    score: u32,
-}
-
-#[derive(Debug)]
-struct GameWorld {
-    players: Vec<Player>,
-}
-
-fn update_players_system<F>(world: &mut GameWorld, mut f: F)
-where
-    F: Fn(&mut Player),
-{
-    for p in &mut world.players {
-        f(p);
-    }
-}
-
-fn update_score_system<F>(world: &GameWorld, mut f: F)
-where
-    F: FnMut(&Player),
-{
-    for p in &world.players {
-        f(p);
-    }
 }
