@@ -1,23 +1,36 @@
 # Ders 09: Closures
 
-Closure terimi çoğu zaman anonim fonksiyon olarak da ifade edilir. Özellikle fonksiyonel dillerde yaygın olarak kullanılan closure'lar, bir değişkene atanabilir ve bu sayede fonksiyonlara parametre olarak kod bloklarının taşınması sağlanabilir. Aşağıdaki basit kod parçasında en temek haliyet bir closure tanımı yer almaktadır.
+**Closure** terimi çoğu zaman anonim fonksiyon olarak da ifade edilir. Özellikle fonksiyonel dillerde yaygın olarak
+kullanılan closure'lar, bir değişkene atanabilir ve bu sayede fonksiyonlara parametre olarak kod bloklarının taşınması
+sağlanabilir. Benzer şekilde fonksiyonlardan dönüş türü olarak da kullanılabilir. Aşağıdaki basit kod parçasında en
+temel haliyle bir closure kullanımı yer almaktadır.
 
 ```rust
-let square = |x| x * x;
-println!("{}", square(5));
+fn main() {
+    let square = |x| x * x;
+    println!("{}", square(5));
+}
 ```
 
-Örnekte tanımlanan square isimli değişken x değerlerinin çarpımını hesap eden bir kod bloğunu ifade eder. square değişkenini normal bir fonksiyon gibi çağırabiliriz. Rust, built-in olarak üç önemli closure sunar.
+Örnekte tanımlanan square isimli değişken x değerlerinin çarpımını hesap eden bir kod bloğunu ifade eder. square
+değişkeni normal bir fonksiyon gibi çağırılabilir. Rust programlama dili built-in gelen üç farklı trait ile closure
+desteği sağlar.
 
 - **Fn:** Closure, dışarıdan yakaladığı değişkenleri salt okunur _(read only)_ şekilde kullanır.
 - **FnMut:** Closure, dış değişkenleri değiştirerek _(mutable)_ kullanabilir.
 - **FnOnce:** Closure, dış değişkenleri sahiplenir (move eder) ve yalnızca bir kez çağrılabilir.
 
-Özellikle nesne toplulukları üzerinden hareket eden iteratif fonksiyonları bu ön tanımlı closure'ları sıklıkla kullanır. Buradaki türler C# tarafından gelenler için delegate türüne benzetilebilir.
+Özellikle nesne toplulukları üzerinden hareket eden iteratif fonksiyonlar bu ön tanımlı closure'ları sıklıkla kullanır.
+Bu trait'ler bir anlamda C# tarafından gelenler için delegate türüne de benzetilebilir.
 
 ## Filtreleme ve Sıralama İşlemleri
 
-Takip eden örnekler Game türünden veriler içeren bir vector ile ilişkilidir. Örnek oyun bilgileri için repository.rs dosyasına bakılabilir. Çok basit bir örnekle başlayalım. Oyunları yıllara göre sıralamak istediğimiz düşünelim. Normalde vector türleri belli bir key değerine göre sıralama işlemi için sort_by_key isimli metodu sağlar. Bu metod FnMut(&T) -> K türünden bir parametre kullanır. Bir başka deyişle sıralama için kullanılacak anahtar alanı ele alması gerekir. Buna göre aşağıdaki gibi bir örnek yazılabilir.
+Takip eden örnekler Game türünden veriler içeren bir vector ile ilişkilidir. Örnek oyun bilgileri
+için [repository.rs](./src/repository.rs) dosyasına bakılabilir. Çok basit bir örnekle başlayalım. Oyunları yıllara göre
+sıralamak istediğimizi düşünelim. Normalde vector türleri belli bir key değerine göre sıralama işlemi için **sort_by_key
+** isimli metodu sağlar. Bu metod **FnMut(&T) -> K** davranışını uygulayan bir ifade bekler. Bir başka deyişle sıralama
+için kullanılacak anahtar alanı ele alacağı bir davranışa ihtiyaç duyar. Buna göre aşağıdaki gibi bir örnek
+yazılabilir.
 
 ```rust
 mod repository;
@@ -44,7 +57,9 @@ fn main() {
 }
 ```
 
-Diğer yandan aynı işlev year_sorter fonksiyonunu yazmaya gerek kalmadan sort_by metoduna FnMut ile taşınabilecek bir kod bloğu gönderilerek de gerçekleştirilebilir. Hatta farklı sıralama ve filtreleme kritleri de aynı metodoloji ile uygulanabilir. Aşağıdaki örnek kodlarda bu durum ele alınır.
+Diğer yandan aynı işlev year_sorter fonksiyonunu yazmaya gerek kalmadan **sort_by** metoduna **FnMut** ile taşınabilecek
+bir kod bloğu gönderilerek de gerçekleştirilebilir. Hatta farklı sıralama ve filtreleme kritleri de aynı metodoloji ile
+uygulanabilir.
 
 ```rust
 fn main() {
@@ -68,7 +83,9 @@ fn main() {
 }
 ```
 
-sort_by ve into_iter çağrısı sonrası erişilen filter metotları parametre olarak closure alır. Buna göre tüm nesen koleksiyonu üzerinde closure ifadesi ile gelen kod bloğu çalıştırılır. Örneğin popülerlik değeri 2.0 üzerinden olanları toplamak için aşağıdaki closure kullanılmıştır.
+**sort_by** ve **into_iter** çağrısı sonrası erişilen **filter** metoduna parametre olarak **closure** ifadeleri
+gönderilmiştir. Buna göre tüm nesne koleksiyonu üzerinde closure ifadesi ile gelen kod bloğu çalıştırılır. Örneğin
+popülerlik değeri 2.0 üzerinden olanları çekmek için aşağıdaki **closure** kullanılmıştır.
 
 ```text
 |g| g.popularity > 2.0
@@ -76,7 +93,11 @@ sort_by ve into_iter çağrısı sonrası erişilen filter metotları parametre 
 
 ## Metot Parametresi Olarak Closure Kullanımı
 
-Pekçok sebepten bir nesne topluluğunun çalışma zamanında neye göre filtreleneceği bilinmez. Programcı söz konusu nesne topluluğu üzerinde işletmek istediği kod bloklarını bir fonksiyon gibi geçebilmelidir. Closure ifadeleri bunu gerçekleştirmek için idealdir. Basit bir oyun sistemi tasarladığımız düşünelim. Aşağıdaki veri modellerini kullanıyoruz.
+Bazı durumlarda bir nesne topluluğunun çalışma zamanında neye göre filtreleneceği bilinmez. Programcı söz konusu nesne
+topluluğu üzerinde işletmek istediği kod bloklarını bir fonksiyon gibi geçebilmelidir. Böylece dinmaik ve esnek bir
+işlevsellik kullanabilir. Closure ifadeleri bunu gerçekleştirmek için idealdir. **Entity Component System** temelli
+basit bir oyun motoru tasarladığımızı düşünelim. Deneysel olarak da aşağıdaki veri modellerini kullandığımızı
+varsayalım.
 
 ```rust
 #[derive(Debug)]
@@ -93,7 +114,13 @@ struct GameWorld {
 }
 ```
 
-Basitçe oyun sahasındaki oyuncuları tanımlayan ve nesne topluluğu olarak ele alan iki veri yapısı var. Sahadaki tüm oyuncular için farklı işlevleri işletecek farklı sistemler tasarlanabilir. Söz gelimi tüm oyuncların pozisyon bilgilerini değiştirecek tek bir fonksiyon yazılabilir veya oyunculardan belli kriterlere uyanların skorlarında değişiklik yapacak bir sistem fonksiyonu da geliştirilebilir. Burada anahtar nokta sistem fonksiyonlarının işletecekleri kodun ne olacağını bilmemeleridir. Aşağıdaki kod parçasında Fn ve FnMut trait'lerinin örnek kullanımlarını içermektedir.
+Basitçe oyun sahasındaki oyuncuları tanımlayan ve nesne topluluğu olarak ele alan iki veri yapısı mevcut. Sahadaki tüm
+oyuncular için farklı işlevleri işletecek farklı sistemler tasarlanabilir. Söz gelimi tüm oyuncların pozisyon
+bilgilerini değiştirecek tek bir fonksiyon yazılabilir veya oyunculardan belli kriterlere uyanların skorlarında
+değişiklik yapacak bir başka sistem fonksiyonu da geliştirilebilir. Burada anahtar nokta sistem fonksiyonlarının
+işletecekleri kodun ne olacağını bilmemeleridir. Eğer bu esnekliği framework ilkeleri çerçevesinde sağlayabilirsek genel
+kullanıma uygun bir oyun motoru tasarlayabiliriz. Aşağıdaki kod parçası **Fn** ve **FnMut** trait'lerinin örnek
+kullanımlarını içermektedir.
 
 ```rust
 fn update_players_system<F>(world: &mut GameWorld, mut f: F)
@@ -109,12 +136,12 @@ fn update_score_system<F>(world: &GameWorld, mut f: F)
 where
     F: FnMut(&Player),
 {
-     /*
-       Burada FnMut yerine Fn kullanıp oluşan hata mesajı incelenebilir.
+    /*
+      Burada FnMut yerine Fn kullanıp oluşan hata mesajı incelenebilir.
 
-       error[E0594]: cannot assign to `total_team_score`, as it is a captured variable in a `Fn` closure
-       change this to accept `FnMut` instead of `Fn`
-    */
+      error[E0594]: cannot assign to `total_team_score`, as it is a captured variable in a `Fn` closure
+      change this to accept `FnMut` instead of `Fn`
+   */
     for p in &world.players {
         f(p);
     }
@@ -163,14 +190,23 @@ pub fn main() {
 }
 ```
 
-Dikkat edileceği fonksiyonlar parametre olarak gelen kod bloklarının world nesnesi üzerinden ulaşılan tüm player değişkenleri için icra eder.  update_player_system fonksiyonunda kullanılan f değişkeni generic bir tür olarak belirtilmiştir ve Fn trait'ini uygulaması beklenmektedir. Kısaca f yerine Fn trait'ine uygun bir closure ifadesi gelebilir. Örneğin sistem fonksiyonuna apply_gravity değişkeni ile tanımlı fonksiyonu atanabilir ya da closure ifadesi ile doğrudan bir blok gönderilebilir. update_score_system fonksiyonunda FnMut trait'ini uygulayan bir closure ifadesi beklenir. Bu örnek main fonksiyonunda yer alan total_team_score değişkeni üzerinde değişiklik yapar. FnMut olarak tanımlanmasının bir sebebi de bulunduğu scope dışındaki bir değişken üzerinde değişiklik yapacak olmasıdır.
+Dikkat edileceği üzere fonksiyonlar parametre olarak gelen kod bloklarının world nesnesi üzerinden ulaşılan tüm player
+değişkenleri için icra eder _(Gerçek bir oyun motorunda Player herhangi bir tür olabilir ve motor kendisine bildirilen
+sistemleri belli bir takvim planına uygun olarak frame by frame işletir)_ **update_player_system** fonksiyonunda
+kullanılan **f** değişkeni generic bir tür olarak belirtilmiştir ve **Fn** trait'ini uygulaması beklenmektedir. Kısaca f
+yerine **Fn** trait'ine uygun bir **closure** ifadesi gelebilir. Örneğin sistem fonksiyonuna **apply_gravity** değişkeni
+ile tanımlı fonksiyonu atanabilir ya da closure ifadesi ile doğrudan bir blok gönderilebilir. **update_score_system**
+fonksiyonunda FnMut trait'ini uygulayan bir closure ifadesi beklenir. Bu örnek main fonksiyonunda yer alan
+**total_team_score** değişkeni üzerinde değişiklik yapar. **FnMut** olarak tanımlanmasının bir sebebi de bulunduğu scope
+dışındaki bir değişken üzerinde değişiklik yapıyor olmasıdır.
 
 ## FnOnce Senaryosu
 
-FnOnce, kullandığı değerleri sahiplenen ve bir sefer çalıştırılması istenen senaryolar için idealdir. Daha çok thread'lerin kullanıldığı durumlarda ele alınabilir. Aşağıdaki örnek kod parçasını bu anlamda ele alabiliriz.
+**FnOnce**, kullandığı değerleri sahiplenen ve bir sefer çalıştırılması istenen kodların kullanımı için idealdir. Daha
+çok thread'lerin kullanıldığı durumlarda ele alınabilir. Aşağıdaki örnek kod parçasını bu anlamda ele alabiliriz.
 
 ```rust
-fn main() 
+fn main()
 {
     // FnOnce Örneği
     let message = Some(String::from("You have unlocked a new level!"));
@@ -198,3 +234,7 @@ fn main()
     handle.join().unwrap();
 }
 ```
+
+## Fonksiyonlardan Closure Döndürülmesi
+
+NotYetImplemented();
