@@ -289,3 +289,65 @@ fn main()
     ));
 }
 ```
+
+Fonksiyonlardan closure döndürme ile ilgili olarak farklı bir örnekle devam edelim. Bu örnekte metinsel ifadeler
+üzerinde doğrulama işlemlerini ele alan fonksiyonel bir tasarım söz konudur. Tüm metotlar dikkat edileceği üzere Fn
+türünden bir trait döndürmektedir.
+
+```rust
+#[allow(dead_code)]
+fn min_length(length: usize) -> impl Fn(&str) -> bool {
+    move |input| input.len() > length
+}
+
+#[allow(dead_code)]
+fn is_digits_only() -> impl Fn(&str) -> bool {
+    |input| input.chars().all(|c| c.is_ascii_digit())
+}
+
+#[allow(dead_code)]
+fn illegal_chars(illegals: Vec<char>) -> impl Fn(&str) -> bool {
+    move |input| input.chars().any(|c| illegals.contains(&c))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn min_length_test() {
+        let validator = Box::new(min_length(10));
+        let input = "Jan Claud Van D@me!";
+        assert!(validator(input));
+    }
+
+    #[test]
+    fn only_digits_test() {
+        let validator = Box::new(is_digits_only());
+        let input = "12345";
+        assert!(validator(input));
+    }
+
+    #[test]
+    fn illegal_chars_test() {
+        let validator = Box::new(illegal_chars(vec!['=', ';']));
+        let input = "Select * from Products; 1=1; Select * from sys";
+        assert!(validator(input));
+    }
+}
+```
+
+Bazı fonksiyonlarda **move** keyword kullanıldığı gözden kaçırılmamalıdır. move keyword dışarıdan gelen bir değişken
+varsa onun sahipliğinin closure bloğuna taşınması için kullanılır. Özellikle closure ifadelerinin bir thread içerisinde
+kendi başlarına yaşamaya devam etmeleri gerekiyorsa bu bildirim zorunludur. Elbette sahiplik alınması için gerekli
+koşullar söz konusu ise move kullanılır. String ve Vec gibi türlerdede Copy trait implementasyonu olmadığında sahipliğin
+bilinçli olarak taşınacağı belirtilmelidir. **move** keyword kullanımı zaman zaman kafa karıştırıcı olabilir. Derleme
+zamanı her ne kadar uyarsa da hangi durumlarda gerekli olduğunu bilmek önemlidir. Bunun için aşağıdaki özet tablodan
+yararlanılabilir.
+
+| Kullanım Durumu                                                                   | move Gerekir mi? |
+|-----------------------------------------------------------------------------------|------------------|
+| Closure bir thread’e yollanacaksa (Örn, thread::spawn üzerinden)                  | Evet             |   
+| Closure dışarıdan gelen String, Vec, Box gibi sahipliği alan türleri kullanıyorsa | Evet             |  
+| Döndürülen closure kendi bloğunda harici bir veriye ihtiyaç duyuyorsa             | Evet             | 
+| Closure sadece referansla çalışıyor veya Copy Trait türevlerini kullanıyorsa      | Hayır            |
