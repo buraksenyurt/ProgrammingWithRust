@@ -2,6 +2,7 @@ mod logging;
 mod models;
 mod repository;
 mod systems;
+mod validation;
 
 use crate::logging::log;
 use crate::models::*;
@@ -37,13 +38,11 @@ fn main() {
     let mut world = GameWorld {
         players: vec![
             Player {
-                id: 1,
                 position: (0.0, 0.0),
                 velocity: (2.0, 0.0),
                 score: 0,
             },
             Player {
-                id: 2,
                 position: (100.0, 0.0),
                 velocity: (8.0, 0.0),
                 score: 0,

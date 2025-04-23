@@ -24,4 +24,3 @@ pub fn get_random_between(min: usize, max: usize) -> usize {
 
     min + (nanos % range)
 }
-
