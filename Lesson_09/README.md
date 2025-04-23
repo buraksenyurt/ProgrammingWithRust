@@ -337,13 +337,15 @@ mod tests {
 }
 ```
 
-Bazı fonksiyonlarda **move** keyword kullanıldığı gözden kaçırılmamalıdır. move keyword dışarıdan gelen bir değişken
-varsa onun sahipliğinin closure bloğuna taşınması için kullanılır. Özellikle closure ifadelerinin bir thread içerisinde
-kendi başlarına yaşamaya devam etmeleri gerekiyorsa bu bildirim zorunludur. Elbette sahiplik alınması için gerekli
-koşullar söz konusu ise move kullanılır. String ve Vec gibi türlerdede Copy trait implementasyonu olmadığında sahipliğin
-bilinçli olarak taşınacağı belirtilmelidir. **move** keyword kullanımı zaman zaman kafa karıştırıcı olabilir. Derleme
-zamanı her ne kadar uyarsa da hangi durumlarda gerekli olduğunu bilmek önemlidir. Bunun için aşağıdaki özet tablodan
-yararlanılabilir.
+## move Keyword Kullanımı
+
+Bazı fonksiyonlarda **move** operatörü kullanıldığı gözden kaçırılmamalıdır. Bu operatör dışarıdan gelen bir değişken
+varsa onun sahipliğinin **closure** bloğuna taşınmak için kullanılır. Özellikle closure ifadelerinin bir thread
+içerisinde kendi başlarına yaşamaya devam etmeleri gerekiyorsa bu bildirim zorunludur. Elbette sahiplik alınması için
+gerekli koşullar söz konusu ise move kullanılır. **String** ve **Vec** gibi türlerdede Copy trait implementasyonu
+olmadığında sahipliğin bilinçli olarak taşınacağı belirtilmelidir. **move** keyword kullanımı zaman zaman kafa
+karıştırıcı olabilir. Derleme zamanı her ne kadar uyarsa da hangi durumlarda gerekli olduğunu bilmek önemlidir. Bunun
+için aşağıdaki özet tablodan yararlanılabilir.
 
 | Kullanım Durumu                                                                   | move Gerekir mi? |
 |-----------------------------------------------------------------------------------|------------------|
@@ -351,3 +353,51 @@ yararlanılabilir.
 | Closure dışarıdan gelen String, Vec, Box gibi sahipliği alan türleri kullanıyorsa | Evet             |  
 | Döndürülen closure kendi bloğunda harici bir veriye ihtiyaç duyuyorsa             | Evet             | 
 | Closure sadece referansla çalışıyor veya Copy Trait türevlerini kullanıyorsa      | Hayır            |
+
+Kullanımla ilgili bazı örnekler;
+
+```rust
+fn main() {
+    let message = String::from("Hello Rust");
+    let _ = || println!("{}", message);
+    println!("{}", message);
+}
+```
+
+Yukarıdaki kullanımda message isimli değişkenin closure tanımı sonrası da kullanılabildiği görülür. Ancak burada move
+operatörü ile bilinçli şekilde sahipliği closure içerisine aktarırsak bir hata alırız.
+
+```rust
+fn main() {
+    let message = String::from("Hello Rust");
+    let _ = move || println!("{}", message);
+    println!("{}", message);
+}
+```
+
+Bu durumda aşağıdaki hata üretilir.
+
+```text
+let message = String::from("Hello Rust");
+   |         ------- move occurs because `message` has type `String`, which does not implement the `Copy` trait
+88 |     let _ = move || println!("{}", message);
+   |             -------                ------- variable moved due to use in closure
+   |             |
+   |             value moved into closure here
+89 |     println!("{}", message);
+   |                    ^^^^^^^ value borrowed here after move
+```
+
+Burada String türünün kullanılması taşıma hatasına sebebiyet vermektedir. Zira **Copy trait** uygulayan bir türün
+kullanılırsa sorun oluşmayacaktır.
+
+```rust
+fn main() {
+    let value = 23;
+    let closure_1 = || println!("{}", value);
+    let closure_2 = move || println!("{}", value);
+    closure_1();
+    closure_2();
+}
+```
+
