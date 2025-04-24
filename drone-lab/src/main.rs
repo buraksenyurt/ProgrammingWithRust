@@ -1,11 +1,19 @@
 use crate::controller::SimulationController;
 
-mod controller;
-mod data;
-mod model;
-mod tests;
+pub mod controller;
+pub mod data;
+pub mod model;
+pub mod tests;
 
-fn main() {
+/*
+    Bu örnekte bazı enstrümanlarda markdown formatında yardımcı metinler eklenmiştir.
+    Bunları içeren HTML yardım dokümanını hazırlayabilmek için `cargo doc` komutunu kullanabilirsiniz.
+    Bu komut, projenizin kök dizininde `target/doc` dizinini oluşturacak ve burada projenizin dokümantasyonunu barındıracaktır.
+    Dokümantasyonu görüntülemek için `cargo doc --open` komutunu kullanabilirsiniz.
+    Tüm rust ekosistemi markdown formatını desteklemektedir ve yardım dokümanları oluşturmak için yaygın olarak kullanılmaktadır.
+*/
+
+pub fn main() {
     // todo@buraksenyurt Derste yapılacaklar
     // Aynı davranışları uygulayan farklı veri yapılarını kullanabilen generic bir Simulation modeli oluşturmayı deneyelim
 

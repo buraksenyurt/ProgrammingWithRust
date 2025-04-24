@@ -1,3 +1,5 @@
+//! Bu modül, drone simülasyonunu ve kontrolünü sağlayan yapıları içerir.
+
 mod drone;
 mod location;
 
