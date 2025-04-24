@@ -18,6 +18,7 @@ mod tests {
             },
             is_alive: false,
         };
+        // Mocking kullanılabilir
         let actual = FlightController::check_status(&discovery_drone);
         assert_eq!(actual, DroneStatus::Offline);
     }
@@ -38,7 +39,7 @@ mod tests {
             is_alive: true,
         };
         let actual = FlightController::check_status(&discovery_drone);
-        assert_eq!(actual, DroneStatus::LowBattery(energy_level));
+        assert_eq!(actual, DroneStatus::LowBattery(BatteryRate(energy_level)));
     }
 
     #[test]

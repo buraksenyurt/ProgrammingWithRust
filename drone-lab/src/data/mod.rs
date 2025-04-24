@@ -11,6 +11,13 @@ pub const DRONE_MODELS: [&str; 10] = [
     "Acrobat-K",
 ];
 
+pub const LOCATION_CAPTIONS: [&str; 4] = [
+    "Kat 1 - Kuzey Batı Kanadı",
+    "Zemin Kat - Merkez",
+    "Kat 3 - Doğu Kanadı",
+    "Çatı Katı - Helikopter Pisti Merkez",
+];
+
 mod generator;
 
-pub use generator::*;
+// pub use generator::*;
