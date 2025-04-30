@@ -1,49 +1,47 @@
-fn main() {
-    recursive_sample()
-}
-use std::fmt::{Display, Formatter};
+use std::cell::RefCell;
+use std::rc::Rc;
 
-enum Server {
-    Node(String, Box<Server>, Box<Server>),
-    Empty,
+fn main() {
+    run_rc()
 }
-impl Display for Server {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Server::Node(name, primary, backup) => {
-                write!(
-                    f,
-                    "Server: {}\n  Primary: {}\n  Backup: {}",
-                    name, primary, backup
-                )
-            }
-            Server::Empty => write!(f, "None"),
+
+#[derive(Debug)]
+struct Player {
+    id: u32,
+    name: String,
+    friends: RefCell<Vec<Rc<Player>>>,
+}
+
+impl Player {
+    fn new(id: u32, name: &str) -> Rc<Self> {
+        Rc::new(Player {
+            id,
+            name: name.to_string(),
+            friends: RefCell::new(Vec::new()),
+        })
+    }
+
+    fn add_friend(self: &Rc<Self>, friend: Rc<Player>) {
+        self.friends.borrow_mut().push(friend);
+    }
+
+    fn print(&self) {
+        println!("{}'s friends:", self.name);
+        for friend in self.friends.borrow().iter() {
+            println!("  {} (ID: {})", friend.name, friend.id);
         }
     }
 }
 
-pub fn recursive_sample() {
-    let backup_server_blue = Server::Node(
-        String::from("Backup Server Blue"),
-        Box::new(Server::Empty),
-        Box::new(Server::Empty),
-    );
+pub fn run_rc() {
+    let steve = Player::new(1, "Stivi Vondır");
+    let lord = Player::new(2, "Lord veyda");
+    let anakin = Player::new(3, "Anakin");
 
-    let primary_server_green = Server::Node(
-        String::from("Primary Server Green"),
-        Box::new(Server::Empty),
-        Box::new(backup_server_blue),
-    );
+    steve.add_friend(Rc::clone(&lord));
+    steve.add_friend(Rc::clone(&anakin));
 
-    let root_server = Server::Node(
-        String::from("Root Server"),
-        Box::new(primary_server_green),
-        Box::new(Server::Node(
-            String::from("Backup Root"),
-            Box::new(Server::Empty),
-            Box::new(Server::Empty),
-        )),
-    );
+    steve.print();
 
-    println!("{}", root_server);
+    println!("Lord Veyda's ID: {}", lord.id);
 }

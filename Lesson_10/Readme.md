@@ -16,13 +16,6 @@ duralım. Rust dilinde birçok smart pointer vardır. Box, RefCell, Rc, Arc gibi
     - **Deref** ve **Drop** trait’lerini implemente eden struct türleri olarak tasarlanabilirler _(Yani kendi Smart
       Pointer modellerimizi tasarlayabiliriz)_
 
-## Hangisi ne zaman?
-
-**Box** ve **RefCell** birden fazla sahipliği tek bir veri üzerinde sağlarken, Rc aynı veri üzerinden birden fazla
-sahiplik sunar. Box immutable veya mutable ödünç alma _(borrowing)_ için derleme zamanında kontrol sağlar. Rc sadece
-immutable borrowing için derleme zamanında kontrol sağlar.RefCell immutable veya mutable ödünç alma için runtime'da
-kontrol sağlar.
-
 ## Boxing
 
 Bir veriyi Stack yerine Heap üzerinde konuşlandırmanın en basit hali Box enstrümanını kullanmaktır. Aşağıda bu kullanıma
@@ -122,4 +115,227 @@ pub fn recursive_sample() {
 }
 ```
 
-// DEVAM EDECEK
+Server isimli enum türünün Node alanı içerisinde Box edilen kendi türleri tutulmakta. Burada Box işlemi söz konusu
+olduğu için bağlı liste Heap üzerinde konuşlandırılacak.
+
+# Reference Counting
+
+Bilinçli bir şekilde Heap üzerine alınan verilerde birden fazla sahipliğin söz konusu olduğu durumlarda referans
+değerlerin sayımı tutulur. Eğer paylaşımlı thread'ler söz konusu değilse Rc türü ihtiyacı karşılar. Birden fazla thread
+aynı veri alanı üzerinde çalışma gerektiği durumlarda ise tip güvenliğini gözeten Atomic Reference Counting yani Arc
+kullanılır. Aşağıdaki kod parçasında en basit haliyle Rc türünden bir smart pointer kullanımı işlenmektedir.
+
+```rust
+use std::rc::Rc;
+
+fn main() {
+    hello_rc()
+}
+
+pub fn hello_rc() {
+    let p1 = Rc::new(String::from("Some values on the heap"));
+    let p2 = p1.clone();
+    let p3 = p2.clone();
+
+    println!("p1={:?}", p1);
+    println!("p2={:?}", p2);
+    println!("p3={:?}", p3);
+}
+```
+
+Bu örnekte yer alan p1, p2 ve p3 değişkenleri aynı string veriyi içeren işaretçilerdir. Rc türüne olan ihtiyacı daha iyi
+anlamak için aşağıdaki basit örneğe bakalım.
+
+```rust
+fn main() {
+    run_rc_with_error()
+}
+
+#[derive(Debug)]
+struct Player {
+    id: u32,
+    name: String,
+    friends: Vec<Player>,
+}
+
+impl Player {
+    fn new(id: u32, name: &str) -> Self {
+        Player {
+            id,
+            name: name.to_string(),
+            friends: Vec::new(),
+        }
+    }
+
+    fn add_friend(&mut self, friend: Player) {
+        self.friends.push(friend);
+    }
+
+    fn print(&self) {
+        println!("{}'s friends:", self.name);
+        for friend in &self.friends {
+            println!("  {} (ID: {})", friend.name, friend.id);
+        }
+    }
+}
+
+pub fn run_rc_with_error() {
+    let mut steve = Player::new(1, "Stivi Vondır");
+    let lord = Player::new(2, "Lord veyda");
+    let anakin = Player::new(3, "Anakin");
+
+    steve.add_friend(lord); // lord' un sahipliği add_friend sonrası steve' e taşındı
+    steve.add_friend(anakin);
+
+    steve.print();
+
+    println!("Lord veyda's ID: {}", lord.id); // Value Moved Here
+}
+```
+
+Bir oyuncunun arkadaşlarını da yine kendi türünden Vector olarak tutan Player isimli bir veri yapısı mevcut. add_friend
+metodu ile bir oyuncuya başka Player örnekleri ekleyebiliyoruz. Player'ın sahip olduğu veri üzerinde değişiklik söz
+konusu. Temsili run metoduna baktığımızda son satırdaki println! çağrısında value moved here hatası alırız. Bu son
+derece doğaldır zira steve değişkeni üzerinden yapılan ilk add_friend çağrısı sırasında lord değişkeninin sahipliği de
+taşınır. Dolayısıyla add_friend sonrası lord değişkenine tekrardan erişilemez. Bu tip bir senaryoyu yönetmek için Rc
+smart pointer kullanılabilir. Ancak mutable olma zorunluluğuna dikkat etmek gerekir. Bunu daha iyi anlamak için örneği
+aşağıdaki haliyle değiştirelim.
+
+```rust
+#[derive(Debug)]
+struct Player {
+    id: u32,
+    name: String,
+    friends: Vec<Rc<Player>>,
+}
+
+impl Player {
+    fn new(id: u32, name: &str) -> Rc<Self> {
+        Rc::new(Player {
+            id,
+            name: name.to_string(),
+            friends: Vec::new(),
+        })
+    }
+
+    fn add_friend(self: &Rc<Self>, friend: Rc<Player>) {
+        self.friends.push(friend);
+    }
+
+    fn print(&self) {
+        println!("{}'s friends:", self.name);
+        for friend in self.friends.iter() {
+            println!("  {} (ID: {})", friend.name, friend.id);
+        }
+    }
+}
+
+pub fn run_rc_with_error_2() {
+    let steve = Player::new(1, "Stivi Vondır");
+    let lord = Player::new(2, "Lord veyda");
+    let anakin = Player::new(3, "Anakin");
+
+    steve.add_friend(Rc::clone(&lord));
+    steve.add_friend(Rc::clone(&anakin));
+
+    steve.print();
+
+    println!("Lord Veyda's ID: {}", lord.id);
+}
+```
+
+Bu sefer add_friend metodu içerisindeki self.friends.push metodunda bir hata alınır.
+
+```text
+cannot borrow data in an `Rc` as mutable [E0596]
+cannot borrow as mutable
+Help: trait `DerefMut` is required to modify through a dereference, but it is not implemented for `Rc<Player>`
+```
+
+Player veri yapısı kendi içerisinden kendi türünden bir Vector kullanmaktadır.İlk hata sebebiyle Vec'ün Rc<Player>
+şeklinde kullanılması tercih edilebilir. Ancak bu özellikle add_friends metodunda vektör içeriğine mutable erişmeyi
+gerektirir. Bu nedenle vektöre referansının da mutable olarak ele alınabilmesi gerekir. Normalde bir veriye erişen
+birden fazla sahip varken mutable kullanım derleme hatasına yol açabilir. **RefCell** smart pointer kullanımı ile bunu
+çalışma zamanına taşırız. Yani ownership kontrolünü runtime tarafında işletilmesini sağlarız. Dolayısıyla örnek kodları
+aşağıdaki şekilde değiştirerek ilerleyebiliriz.
+
+```rust
+use std::cell::RefCell;
+use std::rc::Rc;
+
+fn main() {
+    run_rc()
+}
+
+#[derive(Debug)]
+struct Player {
+    id: u32,
+    name: String,
+    friends: RefCell<Vec<Rc<Player>>>,
+}
+
+impl Player {
+    fn new(id: u32, name: &str) -> Rc<Self> {
+        Rc::new(Player {
+            id,
+            name: name.to_string(),
+            friends: RefCell::new(Vec::new()),
+        })
+    }
+
+    fn add_friend(self: &Rc<Self>, friend: Rc<Player>) {
+        self.friends.borrow_mut().push(friend);
+    }
+
+    fn print(&self) {
+        println!("{}'s friends:", self.name);
+        for friend in self.friends.borrow().iter() {
+            println!("  {} (ID: {})", friend.name, friend.id);
+        }
+    }
+}
+
+pub fn run_rc() {
+    let steve = Player::new(1, "Stivi Vondır");
+    let lord = Player::new(2, "Lord veyda");
+    let anakin = Player::new(3, "Anakin");
+
+    steve.add_friend(Rc::clone(&lord));
+    steve.add_friend(Rc::clone(&anakin));
+
+    steve.print();
+
+    println!("Lord Veyda's ID: {}", lord.id);
+}
+```
+
+İlk dikkat edilmesi gereken nokta Player veri yapısındaki friends alanının türüdür. Player nesneleri için bir referans
+sayacı kullanılırken değiştirilebilir olmasını sağlama işi RefCell ile çalışma zamanına bırakılmıştır. new metodu
+içerisinde RefCell nesnesnin nasıl kullanıldığına da dikkat edelim. Ayrıca friends vektörünü üzerinde değişiklik yapmak
+üzere kullanacaksak aynen add_friend metodunda olduğu gibi borrow_mut fonksiyonu ile mutable olarak ödünç alınmasını
+sağlamalıyız. Eğer sadee okuma amaçlı kullanacaksak bu durumda da borrow metodunu kullanmalıyız.
+
+Bu senaryoya göre farklı kullanım şekilleri de söz konusu olabilir.
+
+- Sadece bir vektör üzerinde çalışılacaksa RefCell<Vec<Player>> kullanımı yeterlidir.
+- Vektörün paylaşımı söz konusu ise Rc<RefCell<Vec<Player>>> daha uygun bir çözüm olabilir.
+- Hem vektörü hem de içindeki elemanların paylaşışması gerekiyorsa Rc<Vec<RefCell<Player>>>
+  daha iyi bir çözüm olabilir.
+
+Şunu da unutmamamak gerekir hem Rc hem de RefCell kullanımının çalışma zamanı maliyetleri daha yüksektir _(Zira referans
+sayımı ve mutasyon kontrolleri yapılmaktadır)_
+
+Buraya kadar gördüğümüz Smart Pointer türlerini aşağıdaki grafikle özetleyebiliriz.
+
+![Smart Pointers.png](smrt_ptrs.png)
+
+## Atomic Reference Counting
+
+// Thread'lerin işlendiği bölümde ele alınacaktır
+
+## Hangisi ne zaman?
+
+**Box** ve **RefCell** birden fazla sahipliği tek bir veri üzerinde sağlarken, Rc aynı veri üzerinden birden fazla
+sahiplik sunar. Box immutable veya mutable ödünç alma _(borrowing)_ için derleme zamanında kontroller sağlar. Rc sadece
+immutable borrowing için derleme zamanında kontrol sağlar. RefCell immutable veya mutable ödünç alma için runtime'da
+kontrol sağlar.
