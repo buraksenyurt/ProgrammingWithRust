@@ -16,7 +16,7 @@ yer aldığı repodur.
     - [Ders 07 - Generic Türler](./Lesson_07/README.md)
     - [Ders 08 - Traits](./Lesson_08/README.md)
     - [Ders 09 - Closures](./Lesson_09/README.md)
-    - [Ders 10 - Smart Pointers]()
+    - [Ders 10 - Smart Pointers](./Lesson_10/Readme.md)
     - [Ders 11 - Threads]()
     - [Ders 12 - Channels]()
     - [Ders 13 - Macros]()
