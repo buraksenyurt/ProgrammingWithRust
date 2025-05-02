@@ -17,7 +17,7 @@ yer aldığı repodur.
     - [Ders 08 - Traits](./Lesson_08/README.md)
     - [Ders 09 - Closures](./Lesson_09/README.md)
     - [Ders 10 - Smart Pointers](./Lesson_10/Readme.md)
-    - [Ders 11 - Threads]()
+    - [Ders 11 - Threads](./Lesson_11/README.md)
     - [Ders 12 - Channels]()
     - [Ders 13 - Macros]()
     - [Destekleyici Bölümler]()
