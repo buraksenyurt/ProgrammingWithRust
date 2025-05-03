@@ -24,6 +24,7 @@ yer aldığı repodur.
         - [Birim Test](UnitTests.md)
         - [Hata Yönetimi](ErrorHandling.md)
         - [Temel I/O İşlemleri](./io.md)
+        - [Streams]()
 - [Yardımcı Kaynaklar](#yardımcı-kaynaklar)
 - [Örnek Uygulamalar](#örnek-uygulamalar)
 

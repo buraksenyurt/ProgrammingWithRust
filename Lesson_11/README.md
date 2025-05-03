@@ -167,7 +167,204 @@ nesneleri de bir vektörde toplanır ve son aşamada tamamının sonuçları ür
 
 ## Atomic Reference Counting
 
-// todo@buraksenyurt Not Implemented Yet
+Arc türününün kullanımını anlamak için öncelikle sorunu ortaya koymamız gerekir. Aşağıdaki örnek kod parçasını göz önüne
+alalım.
+
+```rust
+use std::thread;
+
+fn main() {
+    run_with_error();
+    println!("After the thread calling");
+}
+
+pub fn run_with_error() {
+    let data = vec![
+        "Service Red: Task A",
+        "Service Blue: Task B",
+        "Service Green: Task C",
+        "Service Alpha: Task D",
+    ];
+
+    let mut handles = vec![];
+    for i in 0..2 {
+        let handle = thread::spawn(move || {
+            for task in &data {
+                println!("Thread '{}' is processing '{}'", i, task);
+            }
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+}
+```
+
+Bu kod derlenmeyecek ve aşağıdaki hata mesajı üretilecektir.
+
+```text
+let data = vec![
+     ---- move occurs because `data` has type `Vec<&str>`, which does not implement the `Copy` trait
+
+for i in 0..2 {
+------------- inside of this loop
+ let handle = thread::spawn(move || {
+                            ^^^^^^^ value moved into closure here, in previous iteration of loop
+     for task in &data {
+                  ---- use occurs due to use in closure
+```
+
+Senaryoda data isimli vektörü kullanmak isteyen 2 farklı thread oluşturulmak istenmektedir. Sorun aynı anda birden fazla
+thread'in ortak bir referansa erişmeye çalışmasıdır zira data değişkeninin içeriği closure ifadesi içerisinde
+alındığında sahiplikte bu bloğa geçer. Dolayısıyla Rust'ın sahiplik ilkeleri gereği thread safe bir ortamın sağlanması
+için bu referans veri başka bir thread tarafından kullanılamaz. Çözüm olarak Arc türünden yararlanılabilir. Aşağıdaki
+kod örneğinde bu kullanıma yer verilmektedir.
+
+```rust
+use std::sync::Arc;
+use std::thread;
+
+fn main() {
+    run_correctly();
+    println!("After the thread calling");
+}
+
+pub fn run_correctly() {
+    let data = Arc::new(vec![
+        "Service Red: Task A",
+        "Service Blue: Task B",
+        "Service Green: Task C",
+        "Service Alpha: Task D",
+    ]);
+
+    let mut handles = vec![];
+
+    for i in 0..2 {
+        let data_clone = Arc::clone(&data);
+        let handle = thread::spawn(move || {
+            for task in data_clone.iter() {
+                println!("Thread '{}' is processing '{}'", i, task);
+            }
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+}
+```
+
+Bir önceki örnekten farklı olarak data isimli değişken oluşturulurken vektörün kendisi yeni bir atomik referans sayacına
+devredilir. İkinci önemli nokta thread açılmadan önce herbir thread bloğuna bu Arc referansının bir klonunun
+atanmasıdır. clone metodu çağırılırken data değişkeninin referansının verildiğine de dikkat edilmelidir. Böylece data
+değişkenin işaret ettiği veriye her thread güvenli bir şekilde erişir, Arc söz konusu referans klonlarını sayar ve drop
+sırasında da bunları sondan başa doğru kaldırır. Ne var ki thread'lerin veriye güvenli erişimi söz konusu olsa da bazı
+senaryolarda verinin tutarlılığının bozulma ihtimali vardır.
+
+Şimdiki senaryoda thread'lerin aynı veri üzerinde değişiklik yapmak istediğiniz düşünelim. Bu amaçla koduuzu biraz
+değiştirip aşağıdaki hale getirelim.
+
+```rust
+use std::sync::Arc;
+use std::thread;
+
+fn main() {
+    run_inconsistent();
+    println!("After the thread calling");
+}
+
+pub fn run_inconsistent() {
+    let data = Arc::new(vec![0; 10]);
+    let mut handles = vec![];
+
+    for i in 0..4 {
+        let data_clone = Arc::clone(&data);
+        let handle = thread::spawn(move || {
+            for j in 0..data_clone.len() {
+                data_clone[j] += 2;
+                println!("Thread {} updating index {}", i, j);
+            }
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    println!("{:?}", *data);
+}
+```
+
+Bu kod parçası da derlenmeyecek ve aşağıdaki hatayı üretecektir.
+
+```text
+error[E0596]: cannot borrow data in an `Arc` as mutable                                                                                                          
+  --> Lesson_11\src\main.rs:17:17
+   |
+17 |                 data_clone[j] += 2;
+   |                 ^^^^^^^^^^ cannot borrow as mutable
+   |
+   = help: trait `DerefMut` is required to modify through a dereference, but it is not implemented for `Arc<Vec<i32>>`
+```
+
+Arc referansının klonu alınarak üzerinde değişiklik yapılmak istenmektedir ancak Arc veriye eş zamanlı olarak güvenli
+erişim sağlarken onun mutable olmasına izin vermez. Bir başka deyişle veriye eş zamanlı erişim Arc kullanımı ile
+mümkünken güvenli bir şekilde değiştirilmesi için farklı bir metodoloji kullanmamız gerekir. Buna istinaden aşağıdaki
+örneği göz önüne alabiliriz.
+
+```rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    run_mutex();
+    println!("After the thread calling");
+}
+
+pub fn run_mutex() {
+    let data = Arc::new(Mutex::new(0));
+
+    let data_clone_one = Arc::clone(&data);
+    let t1 = thread::spawn(move || {
+        let mut num = data_clone_one.lock().unwrap();
+        *num += 3;
+        println!("Thread 1 has locked the data.");
+        thread::sleep(Duration::from_secs(3)); // Kasıtlı olarak bekletme yapıyoruz
+        println!("After 3 seconds...\nThread 1 is unlocking the data.");
+    });
+
+    let data_clone_two = Arc::clone(&data);
+    let t2 = thread::spawn(move || {
+        println!("Thread 2 is trying to lock the data.");
+        let mut num = data_clone_two.lock().unwrap();
+        *num += 5;
+        println!("Thread 2 has locked and updated the data.");
+    });
+
+    t1.join().unwrap();
+    t2.join().unwrap();
+
+    println!("Final value: {}", *data.lock().unwrap());
+}
+```
+
+Değiştirilmek istenen veri öncelikle bir **Mutex** nesnesinin koruması altına bırakılır ve **Arc** smart pointer'ı ile
+ilişkilendirilir. Buna göre farklı thread'ler söz konusu veriye güvenli erişebilir ama değiştirmek istediklerinde bir
+kilit mekanizması koyarak diğer thread'lerin aynı veriyi değiştirmesini engeller. **Thread**'ler bir **closure** ifadesi
+ile başlatıldığında kilit mekanizması bu blok içerisinde konur ve scope dışına gelindiğinde söz konusu kilit otomatik
+olarak düşer. Bu nedenle yukarıdaki örnek kod parçası sorunsuz ve **thread-safe** bir şekilde çalışır. Örnek kod
+parçasında gerçekten kilit mekanizmalarının çalıştığını gözlemlemek için bazı bildirimler eklenmiş ve hayali bekleme
+süresi konulmuştur. Buna göre beklenen çalışma zamanı çıktısı aşağıdaki gibidir.
+
+![mutex runtime.png](mutexRuntime.png)
 
 ## Thread Poisoning
 
@@ -175,4 +372,18 @@ nesneleri de bir vektörde toplanır ve son aşamada tamamının sonuçları ür
 
 ## Concurrency vs Parallel Programming
 
-// todo@buraksenyurt Not Implemented Yet
+Eş zamanlılık _(Concurrency)_ ve paralel programlama sıksık birbirlerine karıştırılırlar. **Concurrency** genel olarak
+birden fazla işin aynı anda başlatılmas ve yönetilmesi olarak tanımlanır. Fakat birden fazla işin fiziksel olarak aynı
+anda işletilmesi paralel programlama olarak tanımlanır. **Concurrency**, başlatılan görevlerin birbirine karışmadan
+yönetilmesine odaklanırken paralel programlamada işlerin gerçekten fiziksel kaynaklar arasında bölüşülerek
+hızlandırılması esastır. Dolayısıyla paralel programlama da donanım yani çekirdek sayıları öne çıkar. Görüldüğü üzere
+tanımlar birbirine çok yakındır bu nedenle karıştırılmaları da doğaldır. **Concurrency** de işler sırasıyla veya
+birbirine bağımlı olmadan işletilirken genellikle yardımcı bazı küfeler kullanılır. **async/await** kullanımları, *
+*Future** ve **tokio** gibi kütüphaneler concurrent programlama için kullanılır. Paralel programlama çoğunlukla işletim
+sistemi seviyesinde ve thread enstrümanı kullanılarak icra edilir. Rust tarafında spawn metodu basitçe thread başlatmak
+için yeterlidir ancak işlemci çekirdeklerinden daha iyi yararlanabilmek için **rayon** gibi harici küfeler _(crates)_
+kullanılır. Asenkron programlama verilebilecek en güzel örneklerden birisi web sunucusudur. Web sunucuları eş zamanlı
+olarak gelen sayısız isteği karşılamakla yükümlüdür. Buradaki işlevsellik paralel programladan ziyade gelen taleplerin
+asenkron olarak belli bir planlayıcı dahilinde birbirlerini beklemden yürütülebilmesidir. Bir başka eş zamanlı çalışma
+örneği de asenkron icra edilen **I/O** işlemleridir. Paralel programlama ileri seviye hesaplamalar gereken süreçlerde
+veya büyük verilerin işlenmesi hatta geniş dil modellerinde çok daha etkilidir.

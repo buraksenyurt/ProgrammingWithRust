@@ -1,36 +1,34 @@
+use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 
 fn main() {
-    multiple_threads_sample();
+    run_mutex();
     println!("After the thread calling");
 }
 
-fn calc_factorial(n: u64) -> u64 {
-    (1..=n).product()
-}
-pub fn multiple_threads_sample() {
-    let numbers = vec![10, 3, 5, 13, 8, 9, 1, 2, 17, 11, 7, 6];
-    let threads_count = 4;
-    let mut handles = vec![];
-    let chunk_size = numbers.len() / threads_count;
+pub fn run_mutex() {
+    let data = Arc::new(Mutex::new(0));
 
-    for i in 0..threads_count {
-        let chunk = numbers[i * chunk_size..(i + 1) * chunk_size].to_vec();
-        handles.push(thread::spawn(move || {
-            let mut results = vec![];
-            for num in chunk {
-                println!("Thread {} processing for {}", i, num);
-                results.push((num, calc_factorial(num)));
-            }
-            results
-        }));
-    }
+    let data_clone_one = Arc::clone(&data);
+    let t1 = thread::spawn(move || {
+        let mut num = data_clone_one.lock().unwrap();
+        *num += 3;
+        println!("Thread 1 has locked the data.");
+        thread::sleep(Duration::from_secs(3)); // Kasıtlı olarak bekletme yapıyoruz
+        println!("After 3 seconds...\nThread 1 is unlocking the data.");
+    });
 
-    let mut final_results = vec![];
+    let data_clone_two = Arc::clone(&data);
+    let t2 = thread::spawn(move || {
+        println!("Thread 2 is trying to lock the data.");
+        let mut num = data_clone_two.lock().unwrap();
+        *num += 5;
+        println!("Thread 2 has locked and updated the data.");
+    });
 
-    for handle in handles {
-        final_results.push(handle.join().unwrap());
-    }
+    t1.join().unwrap();
+    t2.join().unwrap();
 
-    println!("{:?}", final_results);
+    println!("Final value: {}", *data.lock().unwrap());
 }
