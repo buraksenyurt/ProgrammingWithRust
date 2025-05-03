@@ -366,11 +366,231 @@ süresi konulmuştur. Buna göre beklenen çalışma zamanı çıktısı aşağ�
 
 ![mutex runtime.png](mutexRuntime.png)
 
-## Thread Poisoning
+## Deadlock ve Thread Poisoning Problemleri
 
-// todo@buraksenyurt Not Implemented Yet
+Her ne kadar rust dili **thread-safe** bir ortam sağlamak için bazı kuralları devreye alsa da **deadlock** veya **mutex
+poisoning** gibi durumlardan kaçılamayabilir. Aşağıdaki örnek kodlarda bu durumlar ele alınmaktadır. Kilit
+mekanizmalarının hatalı kullanımları **deadlock** oluşmasına sebep olur. Diğer yandan bir kilit söz konusu iken
+bulunulan thread'de **panik** oluşması da sorun yaratır ve bu durum **Thread Poisoning** olarak adlandırılır.
 
-## Concurrency vs Parallel Programming
+### Deadlock Durumu
+
+Bu durumu ele almak için aşağıdaki kod parçasını göz önüne alalım.
+
+```rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+fn main() {
+    deadlock_case();
+    println!("After the thread calling");
+}
+pub fn deadlock_case() {
+    let number = Arc::new(Mutex::new(1));
+    let mut handles = vec![];
+
+    for i in 0..10 {
+        let number = Arc::clone(&number);
+        let handle = thread::spawn(move || {
+            println!("For counter is {}", i);
+            let mut num = number.lock().unwrap();
+            let mut another_num = number.lock().unwrap(); // Tuzak satır
+            *num += 1;
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        println!("Joining handle");
+        handle.join().unwrap();
+    }
+
+    println!("{:?}", number.lock().unwrap());
+}
+```
+
+Senaryoya göre 10 farklı thread başlatılır ve number nesnesi üzerinde erişilen sayısal değer üzerinden işlem yapar.
+Mutex ve Arc kullanıldığı için thread-safe okuma ve değiştirme söz konusudur. Ancak bilerek tuzak bir satır eklenmiştir.
+Büyük çaplı projelerde bu durum kolayca gözden kaçabilir. İlk lock konulduktan sonra eklenen bir diğer lock thread'lerin
+birbirine beklemesine neden olacak ve bu bir deadlock'a sebebiyet verecektir. Zira örnek çalıştırıldığında sonlanmadığı
+açıkça görülebilir. Durumu daha gerçekeçi bir senaryo üzerinden pekiştirelim. Bu sefer bir banka hesap bilgisindeki
+bakiye alanı üzerinden işlem yapılmakta.
+
+```rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+fn main() {
+    deadlock_case_banking();
+    println!("After the thread calling");
+}
+struct Account {
+    owner: String,
+    balance: f32,
+}
+
+pub fn deadlock_case_banking() {
+    let my_account = Arc::new(Mutex::new(Account {
+        owner: "John Doe".to_string(),
+        balance: 100.0,
+    }));
+    let other_account = Arc::new(Mutex::new(Account {
+        owner: "Merry Jane".to_string(),
+        balance: 200.0,
+    }));
+
+    let my_account_clone = Arc::clone(&my_account);
+    let other_account_clone = Arc::clone(&other_account);
+
+    let handle1 = thread::spawn(move || {
+        let mut source_account = my_account_clone.lock().unwrap();
+        println!("Thread 1: Locked by source account");
+        thread::sleep(std::time::Duration::from_secs(1));
+        let mut target_account = other_account_clone.lock().unwrap();
+        println!("Thread 1: Locked by target account");
+
+        source_account.balance -= 50.0;
+        target_account.balance += 50.0;
+    });
+
+    let my_account_clone = Arc::clone(&my_account);
+    let other_account_clone = Arc::clone(&other_account);
+
+    let handle2 = thread::spawn(move || {
+        let mut acc2 = other_account_clone.lock().unwrap();
+        println!("Thread 2: Locked by target account");
+        thread::sleep(std::time::Duration::from_secs(1));
+        let mut acc1 = my_account_clone.lock().unwrap();
+        println!("Thread 2: Locked by source account");
+
+        acc2.balance -= 25.0;
+        acc1.balance += 25.0;
+    });
+
+    handle1.join().unwrap();
+    handle2.join().unwrap();
+
+    println!(
+        "Final balances: My Account : {}, Other Account: {}",
+        my_account.lock().unwrap().balance,
+        other_account.lock().unwrap().balance
+    );
+}
+```
+
+Account isimli veri yapısı sembolik olarak hesap bilgilerini tutar. İki farklı hesap nesnesi tanımlanır ve thread'lerde
+güvenli şekilde ele alınabilmeleri için Arc, Mutex enstrümanları ile sarmalanır. handle1 ve handle2 isimli JoinHandle
+türevleri iki ayrı thread başlatır. Her iki thread kendi içerisinde ilgili değişkenler için kilit koyar. Devam eden
+kısımda ise thread'ler birbirini kitler ve deadlock durumu oluşur.
+
+### Thread Poisoning
+
+Thread'ler işletildiğinde olası durumlardan birisi de thread içerisinde panik oluşmasıdır. Aşağıdaki kod parçasını
+göz önüne alalım.
+
+```rust
+use std::fs::File;
+use std::io::Write;
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    poisoning_case_logging();
+}
+pub fn poisoning_case_logging() {
+    let log_file = Arc::new(Mutex::new(
+        File::create("system.log").expect("Unable to create log file"),
+    ));
+    let log_file_clone = Arc::clone(&log_file);
+
+    let handle = thread::spawn(move || {
+        let mut file = log_file_clone.lock().unwrap();
+        writeln!(file, "Thread 1: Writing the system health status").unwrap();
+        panic!("Errors occurred while writing to the log file!");
+    });
+
+    let log_file_clone = Arc::clone(&log_file);
+    let handle_2 = thread::spawn(move || {
+        let mut file = log_file_clone.lock().unwrap();
+        thread::sleep(std::time::Duration::from_secs(3));
+        writeln!(file, "Thread 2: Attempting to write").unwrap();
+    });
+
+    let _ = handle.join();
+    let _ = handle_2.join();
+
+    println!("Log file operations completed");
+}
+```
+
+Senaryoya göre disk üzerindeki bir dosyaya farklı thread'ler log bilgisi yazmaya çalışmaktadır. Gerçek hayatta sıklıkla
+karşılaşılabilecek bir işlem olduğunu ifade edebiliriz. İlk thread açıldığında dosya yazma işlemi gerçekleştirir. Burada
+kilit mekanizması kullanıldığından farklı thread'lerin ayno dosya içeriğine yazması mümkündür. Ancak disk fiziki bir
+donanım olduğundan tahmin edilemeyen sorunlar oluşabilir. Söz gelimi diske erişim geçici süre ortadan kalkar, disk
+dolmuştur vs Bunlar bir panik oluşması için yeterlidir. Örnekte kasıltı olarak bir panic oluşturulur. Çalışma zamanı
+çıktısı aşağıdaki gibidir.
+
+![Poisoning.png](threadPoisoning.png)
+
+İlk thread system.log isimli bir dosya açmış ve içerisine bir log bırakmıştır ancak sonrasında bir panik oluşmuştur.
+Dolayısıyla bu thread zehirlenmiş ve ana thread'e doğru bir panik fırlatmıştır. Dolayısıyla ikinci thread log dosyasına
+yazamaz zira program sonlanır. Bu gibi durumların önüne geçmek için recovery thread'ler kullanılıp unwrap_or_else
+metodları ile panik durumu kontrol altına alınabilir. Örneği aşağıdaki şekilde değiştirdiğimizi düşünelim.
+
+```rust
+use std::fs::File;
+use std::io::Write;
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    poisoning_case_logging();
+    println!("Everything is good!");
+}
+pub fn poisoning_case_logging() {
+    let log_file = Arc::new(Mutex::new(
+        File::create("system.log").expect("Unable to create log file"),
+    ));
+    let log_file_clone = Arc::clone(&log_file);
+
+    let handle = thread::spawn(move || {
+        let mut file = log_file_clone.lock().unwrap();
+        writeln!(file, "Thread 1: Writing the system health status").unwrap();
+        panic!("Errors occurred while writing to the log file!");
+    });
+
+    let log_file_clone = Arc::clone(&log_file);
+    let handle_2 = thread::spawn(move || {
+        let mut file = log_file_clone.lock().unwrap();
+        thread::sleep(std::time::Duration::from_secs(3));
+        writeln!(file, "Thread 2: Attempting to write").unwrap();
+    });
+
+    let log_file_clone = Arc::clone(&log_file);
+    let recovery_handle = thread::spawn(move || {
+        let mut file = log_file_clone
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        thread::sleep(std::time::Duration::from_secs(3));
+        writeln!(file, "Thread 2: Recovering from poisoned state").unwrap();
+    });
+
+    let _ = handle.join();
+    let _ = handle_2.join();
+    let _ = recovery_handle.join();
+
+    println!("Log file operations completed");
+}
+```
+
+İlk thread yine zehirlenir ve ikinci thread'in çalışmasını engeller ancak recovery modundaki son thred kilitlenmiş nesne
+referansını unwarp_or_else metodu ile ele alır. Bu metod hata durumunda alternatif bir çıktı üretilmesini garanti eder.
+Dolayısıyla recovery thread içerisinden söz konusu log dosyasına bilgi yazdırılır. Programın çalışma zamanı çıktısı
+aşağıdaki gibi olacaktır.
+
+![Recovery Thread.png](recoveryThread.png)
+
+Bu tip log yazma operasyonları için ideal senaryo asenkron programlama taktiklerini kullanmaktır.
+
+## Concurrency ve Parallel Programming
 
 Eş zamanlılık _(Concurrency)_ ve paralel programlama sıksık birbirlerine karıştırılırlar. **Concurrency** genel olarak
 birden fazla işin aynı anda başlatılmas ve yönetilmesi olarak tanımlanır. Fakat birden fazla işin fiziksel olarak aynı

@@ -54,11 +54,11 @@ impl DroneRepository {
 }
 
 /// # Kaydetme Hata Enum'u
-/// 
+///
 /// Drone kaydetme işlemi sırasında oluşabilecek hataları temsil eder.
-/// 
+///
 /// ## Enum Variants
-/// 
+///
 /// * `InvalidDroneId` - Geçersiz drone ID hatası
 /// * `WrongModelName` - Yanlış model adı hatası
 #[derive(Debug, PartialEq)]

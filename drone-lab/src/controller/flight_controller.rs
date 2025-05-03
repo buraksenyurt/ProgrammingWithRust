@@ -55,11 +55,11 @@ impl FlightController {
 }
 
 /// # Drone Durum Enum'u
-/// 
+///
 /// Drone'un durumunu temsil eden enum'dur.
-/// 
+///
 /// ## Enum Variants
-/// 
+///
 /// * `OutOffRange(Location)` - Drone'un uçuş alanının dışına çıktığını belirtir.
 /// * `Offline` - Drone'un çevrimdışı olduğunu belirtir.
 /// * `LowBattery(BatteryRate)` - Drone'un pil seviyesinin düşük olduğunu belirtir.
@@ -74,15 +74,15 @@ pub enum DroneStatus<'a> {
 }
 
 /// # Pil Seviyesi Yapısı
-/// 
+///
 /// Pil seviyesini temsil eden yapıdır.
-/// 
+///
 /// ## Fields
-/// 
+///
 /// * `0` - Pil seviyesini temsil eden f32 değeridir.
-/// 
+///
 /// ## Links
-/// 
+///
 /// Bu konuda [Primitive Obsession](https://refactoring.guru/smells/primitive-obsession) makalesinden
 /// daha detaylı bilgi alınabilir.
 #[derive(Debug, PartialEq)]

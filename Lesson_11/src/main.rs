@@ -1,34 +1,43 @@
+use std::fs::File;
+use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
 
 fn main() {
-    run_mutex();
-    println!("After the thread calling");
+    poisoning_case_logging();
+    println!("Everything is good!");
 }
+pub fn poisoning_case_logging() {
+    let log_file = Arc::new(Mutex::new(
+        File::create("system.log").expect("Unable to create log file"),
+    ));
+    let log_file_clone = Arc::clone(&log_file);
 
-pub fn run_mutex() {
-    let data = Arc::new(Mutex::new(0));
-
-    let data_clone_one = Arc::clone(&data);
-    let t1 = thread::spawn(move || {
-        let mut num = data_clone_one.lock().unwrap();
-        *num += 3;
-        println!("Thread 1 has locked the data.");
-        thread::sleep(Duration::from_secs(3)); // Kasıtlı olarak bekletme yapıyoruz
-        println!("After 3 seconds...\nThread 1 is unlocking the data.");
+    let handle = thread::spawn(move || {
+        let mut file = log_file_clone.lock().unwrap();
+        writeln!(file, "Thread 1: Writing the system health status").unwrap();
+        panic!("Errors occurred while writing to the log file!");
     });
 
-    let data_clone_two = Arc::clone(&data);
-    let t2 = thread::spawn(move || {
-        println!("Thread 2 is trying to lock the data.");
-        let mut num = data_clone_two.lock().unwrap();
-        *num += 5;
-        println!("Thread 2 has locked and updated the data.");
+    let log_file_clone = Arc::clone(&log_file);
+    let handle_2 = thread::spawn(move || {
+        let mut file = log_file_clone.lock().unwrap();
+        thread::sleep(std::time::Duration::from_secs(3));
+        writeln!(file, "Thread 2: Attempting to write").unwrap();
     });
 
-    t1.join().unwrap();
-    t2.join().unwrap();
+    let log_file_clone = Arc::clone(&log_file);
+    let recovery_handle = thread::spawn(move || {
+        let mut file = log_file_clone
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        thread::sleep(std::time::Duration::from_secs(3));
+        writeln!(file, "Thread 2: Recovering from poisoned state").unwrap();
+    });
 
-    println!("Final value: {}", *data.lock().unwrap());
+    let _ = handle.join();
+    let _ = handle_2.join();
+    let _ = recovery_handle.join();
+
+    println!("Log file operations completed");
 }
