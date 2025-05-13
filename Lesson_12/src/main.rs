@@ -1,29 +1,43 @@
-use std::sync::mpsc::channel;
-use std::thread;
 use std::time::Duration;
+use tokio::sync::mpsc;
 
-fn main() {
-    multi_producer();
+#[tokio::main]
+pub async fn main() {
+    do_with_tokio().await;
 }
 
-pub fn multi_producer() {
-    let (transmitter, receiver) = channel();
+pub async fn do_with_tokio() {
+    let (transmitter, mut receiver) = mpsc::channel(10);
 
-    for i in 0..10 {
-        let transmitter_clone = transmitter.clone();
-        thread::spawn(move || {
-            transmitter_clone
-                .send(format!("Sending message is {}", i))
+    for i in 1..=5 {
+        let tx_clone = transmitter.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            tx_clone
+                .send(format!("Task {} completed", i))
+                .await
                 .unwrap();
-            thread::sleep(Duration::from_secs(2));
         });
     }
 
     drop(transmitter);
 
-    for received in receiver {
-        println!("Incoming message is '{}'", received);
+    println!("Waiting for all tasks...");
+
+    /*
+       Standart mpsc örneğinden farklı olarak burada ana thread bloklanmadan
+       döngünün asenkron olarak çalıştırılması sağlanır.
+    */
+    tokio::spawn(async {
+        for i in 0..10 {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            println!("Main task is working...Counting {}", i);
+        }
+    });
+
+    while let Some(message) = receiver.recv().await {
+        println!("{}", message);
     }
 
-    println!("End of program");
+    println!("All tasks completed!");
 }

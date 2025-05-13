@@ -93,4 +93,196 @@ pub fn multi_producer() {
 }
 ```
 
-Bu örnekte 10 farklı **thread** kanala mesaj bırakır. Thread'ler **spawn** çağırısı ile ayağa kaldırılmadan önce **transmitter** nesnesinin bir klonunun oluşturulduğunda dikkat edilmelidir. Her bir **thread** kendi **transmitter** klonunu kullanarak kanala mesaj bırakır. Mesajlar kanala senkron sırada bırakılır. İlerleyen satırlarda bir **for** döngüsü ile kanala gelen mesajların **Receiver** nesnesi üzerinden yakalanması işlemi gerçekleştirilir. Dikkat edilmesi gereken noktalardan birisi de **drop** çağrısıdır. Açık bir şekilde **transmitter** nesnesi açıkça **drop** edilmiştir. Bu yapılmadığı durumda receiver dan mesajlar dinlenmeye devam eder ve program sonlanmaz. Bu bazı durumlarda zaten istenen bir durumdur. Sürekli dinlemede kalması gereken bir receiver gerektiren senaryolar buna örnek verilebilir.
+Bu örnekte 10 farklı **thread** kanala mesaj bırakır. Thread'ler **spawn** çağırısı ile ayağa kaldırılmadan önce **transmitter** nesnesinin bir klonunun oluşturulduğunda dikkat edilmelidir. Her bir **thread** kendi **transmitter** klonunu kullanarak kanala mesaj bırakır. Mesajlar kanala senkron sırada bırakılır. İlerleyen satırlarda bir **for** döngüsü ile kanala gelen mesajların **Receiver** nesnesi üzerinden yakalanması işlemi gerçekleştirilir. Dikkat edilmesi gereken noktalardan birisi de **drop** çağrısıdır. Açık bir şekilde **transmitter** nesnesi açıkça **drop** edilmiştir. Bu yapılmadığı durumda receiver dan mesajlar dinlenmeye devam eder ve program sonlanmaz. Zire klonlanan receiver örnekler halen daha yaşamaktadır. Bazı durumlarda zaten istenen bir durumdur. Sürekli dinlemede kalması gereken bir receiver gerektiren senaryolar buna örnek verilebilir. Farklı bir örnekle devam edip otomatik kapanma durumunu ele alalım.
+
+```rust
+use std::sync::mpsc::channel;
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    multi_producer();
+}
+
+pub fn multi_producer() {
+    let (transmitter, receiver) = channel();
+    let transmitter_clone = transmitter.clone();
+
+    thread::spawn(move || {
+        transmitter.send(String::from("Hello there!")).unwrap();
+        thread::sleep(Duration::from_secs(2));
+    });
+
+    thread::spawn(move || {
+        transmitter_clone
+            .send(String::from("Why are you so serious!"))
+            .unwrap();
+    });
+
+    for received in receiver {
+        println!("Incoming message: {}", received);
+    }
+
+    println!("End of program");
+}
+```
+
+Bu örnekte transmitter ve transmitter_clone nesneleri tanımlandıkları thread'ler sonlandığında düşürülürler ve dolayısıyla receiver üzerinden yakalanacak kanal mesajlarının sayısı bellidir. Dolayısıyla program beklendiği şekilde tüm kanal mesajları işlendikten sonra sonlanır.
+
+## Örnek Senaryo
+
+Kanal kullanımları ile ilgili örnek bir senaryo ele alalım. Bu senaryoda sistemdeki n sayıda rapor dosyasının n thread ile işlenmesi söz konusudur. Her bir thread ele aldığı dosyayı işledikten sonra kanal üzerine bilgi bırakır. En sonunda tüm bu bilgiler receiver üzerinden toplanır. İlk versiyonda standart kütüphanenin Sender ve Receiver yapıları kullanılmaktadır.
+
+```rust
+use std::sync::mpsc::channel;
+use std::thread;
+use std::time::Duration;
+
+use rand::Rng;
+
+fn main() {
+    process_reports();
+}
+
+pub fn process_reports() {
+    let (transmitter, receiver) = channel();
+
+    let reports = [
+        "salary.json",
+        "invoices.json",
+        "summary.json",
+        "personnel.json",
+    ];
+
+    for report in reports {
+        let transmitter = transmitter.clone();
+        thread::spawn(move || {
+            let mut rng = rand::thread_rng();
+            let sleep_time = rng.gen_range(2..=5);
+            transmitter
+                .send(format!("Processing '{}' report...", report))
+                .unwrap();
+
+            // Rapor dosyalarının işlendiği bazı business'lar çağırdığımızı düşünelim
+
+            thread::sleep(Duration::from_secs(sleep_time));
+
+            transmitter
+                .send(format!(
+                    "Finished processing '{}' in {} seconds",
+                    report, sleep_time
+                ))
+                .unwrap();
+        });
+    }
+
+    drop(transmitter);
+    println!("Started the processing reports");
+    for result in receiver {
+        println!("Status {}", result);
+    }
+    println!("Completed the processing reports");
+}
+```
+
+Her dosya sıralı bir şekilde döngüye girer ve herbirisi için ayrı bir **thread** açılır. Bu thread'lerde dosyalar ile ilgili farklı iş süreçlerinin işletildiğini düşünebiliriz. Dosya işleyişlerinin farklı sürelerde gerçekleştiğini simüle etmek için rand kütüphanesi ile üretilen rastgele değerlerde beklemeler yapılmaktadır. 
+
+## Asenkronluk
+
+Rust'ın MPSC modülü aslında gerçek anlamda bir asenkronluk sağlamaz. Bir başka deyişle Sender'dan mesajlar asenkron olarak ilerletilebilse de Receiver tarafı bunları senkron olarak işler. Tam bir asenkron çalışma sağlayabilmek için yardımcı küfelerden _(crates)_ yararlanılabilir. Aşağıdaki ilk senaryoda ana thread'in bloklanmasına neden olan bir döngü kullanımı söz konusudur.
+
+```rust
+use std::sync::mpsc::channel;
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    do_with_standard();
+}
+
+pub fn do_with_standard() {
+    let (transmitter, receiver) = channel();
+
+    for i in 1..=5 {
+        let tx_clone = transmitter.clone();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_secs(5));
+            tx_clone.send(format!("Task {} completed", i)).unwrap();
+        });
+    }
+
+    drop(transmitter);
+
+    println!("Waiting for all tasks...");
+
+    // Aşağıdaki döngü main thread üzerine çalışıp buradaki akışı bloklamaya neden olacak
+    for i in 0..10 {
+        thread::sleep(Duration::from_secs(1));
+        println!("Main task is working...Counting {}", i);
+    }
+
+    while let Ok(message) = receiver.recv() {
+        println!("{}", message);
+    }
+
+    println!("All tasks completed!");
+}
+```
+
+// ÇALIŞMA ZAMANI GÖRÜNTÜSÜ EKLENECEK
+
+Aynı örneği **tokio** küfesini kullanarak ele aldığımızda ise ana thread'in bloklanmadan for döngüsünün işletildiğini görebiliriz. Bu receiver tarafında mesajların asenkron ele alınabildiğinin de ispatıdır. tokio küfesini kullanmak için **Full feature** seti ile eklenmesi gerekmektedir.
+
+```bash
+ cargo add tokio -F full
+ ```
+
+ Örnek kod;
+
+ ```rust
+ use std::time::Duration;
+use tokio::sync::mpsc;
+
+#[tokio::main]
+pub async fn main() {
+    do_with_tokio().await;
+}
+
+pub async fn do_with_tokio() {
+    let (transmitter, mut receiver) = mpsc::channel(10);
+
+    for i in 1..=5 {
+        let tx_clone = transmitter.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            tx_clone
+                .send(format!("Task {} completed", i))
+                .await
+                .unwrap();
+        });
+    }
+
+    drop(transmitter);
+
+    println!("Waiting for all tasks...");
+
+    /*
+       Standart mpsc örneğinden farklı olarak burada ana thread bloklanmadan
+       döngünün asenkron olarak çalıştırılması sağlanır.
+    */
+    tokio::spawn(async {
+        for i in 0..10 {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            println!("Main task is working...Counting {}", i);
+        }
+    });
+
+    while let Some(message) = receiver.recv().await {
+        println!("{}", message);
+    }
+
+    println!("All tasks completed!");
+}
+```
+
+// ÇALIŞMA ZAMANI ÇIKTISI EKLENECEK
