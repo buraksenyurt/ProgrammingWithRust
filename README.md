@@ -70,3 +70,4 @@ Rust dilinde **isimlendirme standartları _(Naming Conventions)_** da kod okunur
 - collector; sysinfo küfesini kullanarak cpu, memory metrikleri toplayan uygulama.
 - drone-lab; Konu tekrarı, birim testler, lifetimes kullanımları.
 - fops; Temel I/O işlemleri.
+- router; trait kullanımını örneklemek için eklenmiş olan uygulama.
