@@ -1,18 +1,29 @@
 use std::sync::mpsc::channel;
 use std::thread;
+use std::time::Duration;
 
 fn main() {
-    hello_channels();
+    multi_producer();
 }
 
-pub fn hello_channels() {
-    let (transmitter, reciever) = channel();
-    let message = String::from("Sample content");
+pub fn multi_producer() {
+    let (transmitter, receiver) = channel();
 
-    thread::spawn(move || {
-        transmitter.send(message).unwrap();
-    });
+    for i in 0..10 {
+        let transmitter_clone = transmitter.clone();
+        thread::spawn(move || {
+            transmitter_clone
+                .send(format!("Sending message is {}", i))
+                .unwrap();
+            thread::sleep(Duration::from_secs(2));
+        });
+    }
 
-    let data = reciever.recv().unwrap();
-    println!("{}", data);
+    drop(transmitter);
+
+    for received in receiver {
+        println!("Incoming message is '{}'", received);
+    }
+
+    println!("End of program");
 }
