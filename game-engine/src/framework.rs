@@ -1,3 +1,5 @@
+use std::sync::mpsc::Sender;
+
 pub struct BotContainer {
     is_active: bool,
     bot: Box<dyn Bot>,
@@ -20,7 +22,7 @@ pub trait Actor {
     fn update(&mut self);
 }
 
-#[derive(Default)]
+// #[derive(Default)]
 #[allow(dead_code)]
 pub struct Game {
     // width: f32,
@@ -28,15 +30,18 @@ pub struct Game {
     size: Size,
     actors: Vec<Box<dyn Actor>>,
     bots_container: Vec<BotContainer>,
+    sender: Sender<String>,
 }
 
 impl Game {
-    // pub fn new() -> Self {
-    //     Game {
-    //         actors: Vec::new(),
-    //         size:Size::default()
-    //     }
-    // }
+    pub fn new(sender: Sender<String>) -> Self {
+        Game {
+            actors: Vec::new(),
+            size: Size::default(),
+            bots_container: Vec::new(),
+            sender,
+        }
+    }
     pub fn add_actor(&mut self, actor: Box<dyn Actor>) {
         self.actors.push(actor);
     }
@@ -55,6 +60,9 @@ impl Game {
     }
     pub fn apply(&self) {
         for container in &self.bots_container {
+            self.sender
+                .send("A simple message...".to_string())
+                .expect("Error in sending message into channel");
             if container.is_active {
                 container.bot.apply();
             }

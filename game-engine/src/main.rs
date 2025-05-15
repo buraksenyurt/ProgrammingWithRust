@@ -1,4 +1,5 @@
 use std::{
+    sync::mpsc::channel,
     thread::{self, sleep},
     time::Duration,
 };
@@ -8,8 +9,10 @@ use framework::*;
 mod framework;
 
 fn main() {
-    // let mut game = Game::new();
-    let mut game = Game::default();
+    let (transmitter, receiver) = channel::<String>();
+
+    let mut game = Game::new(transmitter.clone());
+    // let mut game = Game::default();
     let super_mario = Player::new(1, "Super Mario".to_string());
     let mushroom = Mushroom::new(2, 10);
     game.add_actor(Box::new(super_mario));
@@ -17,10 +20,19 @@ fn main() {
 
     let mega_mind = MindController::default();
     game.add_bot(Box::new(mega_mind));
-
     game.add_bot(Box::new(Confuser::default()));
 
+    // GameEngine::run(&game);
+
     game.apply();
+    game.draw();
+    game.update();
+
+    // drop(transmitter);
+    // Not: Sürekli dinlemede kalınacağı için loop döngüsü hiçbir zaman başlamaz.
+    for r in receiver {
+        println!("{}", r);
+    }
 
     loop {
         sleep(Duration::from_secs(2));
@@ -35,7 +47,7 @@ struct MindController {}
 
 impl Bot for MindController {
     fn apply(&self) {
-        thread::spawn(|| {
+        thread::spawn(move || {
             loop {
                 println!("\tApplying simulation...{:?}", thread::current().id());
                 sleep(Duration::from_secs(5));
