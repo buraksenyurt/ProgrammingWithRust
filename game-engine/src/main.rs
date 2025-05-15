@@ -1,11 +1,26 @@
+use std::{thread::sleep, time::Duration};
+
+use framework::*;
+
+mod framework;
+
 fn main() {
-    let mut game = Game::new();
+    // let mut game = Game::new();
+    let mut game = Game::default();
     let super_mario = Player::new(1, "Super Mario".to_string());
     let mushroom = Mushroom::new(2, 10);
     game.add_actor(Box::new(super_mario));
     game.add_actor(Box::new(mushroom));
+
+    loop {
+        sleep(Duration::from_secs(2));
+        game.draw();
+        game.update();
+        // state check
+    }
 }
 
+#[allow(dead_code)]
 struct Player {
     id: u32,
     name: String,
@@ -25,6 +40,7 @@ impl Actor for Player {
     }
 }
 
+#[allow(dead_code)]
 struct Mushroom {
     id: u32,
     strength: u8,
@@ -42,23 +58,5 @@ impl Actor for Mushroom {
     }
     fn update(&mut self) {
         println!("Calculation strength");
-    }
-}
-
-trait Actor {
-    fn draw(&self);
-    fn update(&mut self);
-}
-
-struct Game {
-    actors: Vec<Box<dyn Actor>>,
-}
-
-impl Game {
-    pub fn new() -> Self {
-        Game { actors: Vec::new() }
-    }
-    pub fn add_actor(&mut self, actor: Box<dyn Actor>) {
-        self.actors.push(actor);
     }
 }
