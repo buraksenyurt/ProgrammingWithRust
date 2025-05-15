@@ -14,8 +14,13 @@ fn main() {
     let mushroom = Mushroom::new(2, 10);
     game.add_actor(Box::new(super_mario));
     game.add_actor(Box::new(mushroom));
+
     let mega_mind = MindController::default();
     game.add_bot(Box::new(mega_mind));
+
+    game.add_bot(Box::new(Confuser::default()));
+
+    game.apply();
 
     loop {
         sleep(Duration::from_secs(2));
@@ -26,15 +31,31 @@ fn main() {
 }
 
 #[derive(Default)]
-pub struct MindController {}
+struct MindController {}
 
 impl Bot for MindController {
     fn apply(&self) {
-        //todo@buraksenyurt Buradaki thread'in bir kere açılmasını garanti et
         thread::spawn(|| {
             loop {
-                println!("Applying simulation...");
+                println!("\tApplying simulation...{:?}", thread::current().id());
                 sleep(Duration::from_secs(5));
+            }
+        });
+    }
+}
+
+#[derive(Default)]
+struct Confuser {}
+
+impl Bot for Confuser {
+    fn apply(&self) {
+        thread::spawn(|| {
+            loop {
+                println!(
+                    "\t\tBrain confusing in progress...{:?}",
+                    thread::current().id()
+                );
+                sleep(Duration::from_secs(1));
             }
         });
     }

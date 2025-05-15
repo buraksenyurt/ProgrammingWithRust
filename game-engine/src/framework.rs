@@ -1,3 +1,13 @@
+pub struct BotContainer {
+    is_active: bool,
+    bot: Box<dyn Bot>,
+}
+impl BotContainer {
+    pub fn new(is_active: bool, bot: Box<dyn Bot>) -> Self {
+        BotContainer { is_active, bot }
+    }
+}
+
 pub trait Bot {
     fn apply(&self) {
         println!("Default AI movements");
@@ -17,7 +27,7 @@ pub struct Game {
     // height: f32,
     size: Size,
     actors: Vec<Box<dyn Actor>>,
-    bots: Vec<Box<dyn Bot>>,
+    bots_container: Vec<BotContainer>,
 }
 
 impl Game {
@@ -36,14 +46,18 @@ impl Game {
         }
     }
     pub fn add_bot(&mut self, bot: Box<dyn Bot>) {
-        self.bots.push(bot);
+        self.bots_container.push(BotContainer::new(true, bot));
     }
     pub fn update(&mut self) {
         for actor in &mut self.actors {
             actor.update();
         }
-        for bot in &self.bots {
-            bot.apply();
+    }
+    pub fn apply(&self) {
+        for container in &self.bots_container {
+            if container.is_active {
+                container.bot.apply();
+            }
         }
     }
 }
