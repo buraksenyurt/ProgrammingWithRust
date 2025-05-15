@@ -1,4 +1,7 @@
-use std::{thread::sleep, time::Duration};
+use std::{
+    thread::{self, sleep},
+    time::Duration,
+};
 
 use framework::*;
 
@@ -11,12 +14,29 @@ fn main() {
     let mushroom = Mushroom::new(2, 10);
     game.add_actor(Box::new(super_mario));
     game.add_actor(Box::new(mushroom));
+    let mega_mind = MindController::default();
+    game.add_bot(Box::new(mega_mind));
 
     loop {
         sleep(Duration::from_secs(2));
         game.draw();
         game.update();
         // state check
+    }
+}
+
+#[derive(Default)]
+pub struct MindController {}
+
+impl Bot for MindController {
+    fn apply(&self) {
+        //todo@buraksenyurt Buradaki thread'in bir kere açılmasını garanti et
+        thread::spawn(|| {
+            loop {
+                println!("Applying simulation...");
+                sleep(Duration::from_secs(5));
+            }
+        });
     }
 }
 

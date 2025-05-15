@@ -1,3 +1,9 @@
+pub trait Bot {
+    fn apply(&self) {
+        println!("Default AI movements");
+    }
+}
+
 #[allow(dead_code)]
 pub trait Actor {
     fn draw(&self);
@@ -5,11 +11,13 @@ pub trait Actor {
 }
 
 #[derive(Default)]
+#[allow(dead_code)]
 pub struct Game {
     // width: f32,
     // height: f32,
     size: Size,
     actors: Vec<Box<dyn Actor>>,
+    bots: Vec<Box<dyn Bot>>,
 }
 
 impl Game {
@@ -27,9 +35,15 @@ impl Game {
             actor.draw();
         }
     }
+    pub fn add_bot(&mut self, bot: Box<dyn Bot>) {
+        self.bots.push(bot);
+    }
     pub fn update(&mut self) {
-        for actor in &mut self.actors{
+        for actor in &mut self.actors {
             actor.update();
+        }
+        for bot in &self.bots {
+            bot.apply();
         }
     }
 }
