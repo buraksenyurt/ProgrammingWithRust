@@ -278,3 +278,86 @@ Declarative makrolar ile aralarında bazı farklılıklar da vardır. Bunlar aş
 Procedural Macro'lar, proc-macro crate olarak adlandırılan ayrı bir kütüphanede yazılırlar. Rust söz dizimi üzerinde
 TokenStream kullanılarak işlem yapılması bazı durumlarda zorlayıcı olabilir. syn ve quote gibi küfeler genellikle işi
 kolaylaştıran enstrümanlar içerirler.
+
+## Örnek Procedural Macro
+
+Öncelikle bir kütüphane oluşturulmalıdır.
+
+```bash
+cargo new --lib procs
+
+# Yardımcı küfeler
+cargo add quote
+cargo add syn -F full
+```
+
+Ardından toml dosyasında bu küfenin bir procedural macro olarak ele alınması gerektiği bildirilir.
+
+```toml
+[lib]
+proc-macro = true
+```
+
+Aşağıda kodun çalışma zamanının ölçen bir işlevselliğin procedural macro olarak nasıl yazılabileceği örneklenmektedir.
+
+```rust
+extern crate proc_macro;
+use proc_macro::TokenStream;
+use quote::quote;
+use syn::{ItemFn, parse_macro_input};
+
+#[proc_macro_attribute]
+pub fn work_time_effort(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ItemFn);
+    let fn_name = &input.sig.ident;
+    let fn_block = &input.block;
+
+    let expanded = quote! {
+        fn #fn_name() {
+            let start = std::time::Instant::now();
+            #fn_block
+            let duration = start.elapsed();
+            println!("Total execution time {}: {:?}", stringify!(#fn_name), duration);
+        }
+    };
+
+    expanded.into()
+}
+```
+
+İlgili makro parametre olarak TokenStream'ler alır. Özellikle item değişkeni kod içerisinde kullanılır. item değişkeni
+ile gelen TokenStream parse_macro_input! makrosu kullanılarak içeriği ele alınabilir bir türe dönüştürülür. Buradan
+hareketle makronun uygulandığı metodun adı ve gövdesi yakalanbilir.
+
+İlerleyen adımda quote! makrosu ile yeni bir fonksiyon hazırlanır. Dikkat edileceği üzere gelen fonksiyon bloğunun
+öncesine ve sonrasına yeni kod parçaları eklenmektedir. Makro çıktı olarak üretilen yeni kod parçasını yine bir
+TokenStream olarak dışarı verir.
+
+Bu makro herhangibir metot için aşağıdaki gibi kullanılabilir.
+
+```rust
+mod samples;
+
+use procs::work_time_effort;
+
+#[work_time_effort]
+fn find_total() {
+    let mut total = 0;
+    for i in 0..1000 {
+        total += i;
+    }
+    println!("Result: {}", total);
+}
+
+fn main() {
+    let _total = find_total();
+}
+```
+
+Bir procedural macro küfesini kullanmak için ilgili projeye dependency olarak bildirilmesi gerekir. Bunun için toml
+dosyasındaki ilgili kısım değiştirilmelidir. Örneğin,
+
+```toml
+[dependencies]
+procs = { path = "../procs" }
+```

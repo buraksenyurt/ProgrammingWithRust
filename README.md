@@ -16,15 +16,15 @@ yer aldığı repodur.
     - [Ders 07 - Generic Türler](./Lesson_07/README.md)
     - [Ders 08 - Traits](./Lesson_08/README.md)
     - [Ders 09 - Closures](./Lesson_09/README.md)
-    - [Ders 10 - Smart Pointers](./Lesson_10/Readme.md)
+    - [Ders 10 - Smart Pointers](Lesson_10/README.md)
     - [Ders 11 - Threads](./Lesson_11/README.md)
     - [Ders 12 - Channels](./Lesson_12/README.md)
     - [Ders 13 - Macros](./Lesson_13/README.md)
     - [Destekleyici Bölümler]()
         - [Birim Test](UnitTests.md)
         - [Hata Yönetimi](ErrorHandling.md)
-        - [Temel I/O İşlemleri](./io.md)
-        - [Streams]()
+        - [Temel I/O İşlemleri](IO.md)
+    - [Final Sınavı]()
 - [Yardımcı Kaynaklar](#yardımcı-kaynaklar)
 - [Örnek Uygulamalar](#örnek-uygulamalar)
 
@@ -73,3 +73,4 @@ Rust dilinde **isimlendirme standartları _(Naming Conventions)_** da kod okunur
 - fops; Temel I/O işlemleri.
 - router; trait kullanımını örneklemek için eklenmiş olan uygulama.
 - game-engine; trait, thread ve channel kullanımlarının ele alındığı örnektir.
+- procs; Procedural macro örnekleri içeren bir kütüphanedir.
