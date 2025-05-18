@@ -76,3 +76,70 @@ makrolar dahil isimlendirmelerde fonksiyon adı ! işareti ile sonlandırılır.
 - ($x:expr, $($y:expr),+) => { ... } : Bu kalıpsa iki veya daha fazla argüman için geçerlidir. İkinci söz diziminde yer
   alan + operaötörü en az bir veya daha fazla anlamındadır. Bu durumla karşılaşılması halinde recursive olarak kendisini
   çağıran bir fonksiyon kodu üretilecektir.
+
+## MetaSyntactic Variables
+
+Makrolarda ifadeleri analiz etmek ve eşleşmeleri yakalamak için token'lar kullanılır. Bunlardan en çok kullanılanlar
+aşağıdaki tabloda belirtilmektedir.
+
+| Token     | Açıklama                                                              | Örnek                                             |
+|-----------|-----------------------------------------------------------------------|---------------------------------------------------|
+| `ident`   | Değişken, fonksiyon, struct adı gibi tanımlayıcıyıları temsil edir    | `User`, `my_function`, `x`                        |
+| `ty`      | Belirli bir türü temsil eder _(örneğin, `f32`, `String`, `Vec<i32>`)_ | `f32`, `String`, `Option<T>`                      |
+| `expr`    | Bir expression anlamına gelir.                                        | `5 + 4`, `"hello world"`, `vec![1, 2, 3, 4, 10]`  |
+| `stmt`    | Bir ifade ya da bildirim anlamına gelir.                              | `let range = 50;`, `return 3.14;`                 |
+| `path`    | Modül ya da tür yolu için kullanılır                                  | `std::io::Read`, `crate::module::function`        |
+| `literal` | Sabit değer anlamına gelir (string, sayı, boolean).                   | `23`, `"rustacean"`, `false`                      |
+| `block`   | `{}` bloğunu temsil eder.                                             | `{ let x = 10; x + 1 }`                           |
+| `item`    | struct, enum, fn gibi enstrümanları temsil eder.                      | `struct Product;`, `fn send_email() {}`           |
+| `meta`    | Bir attribute' u temsil eder.                                         | `#[derive(Debug)]`, `#[cfg(target_os = "linux")]` |
+| `tt`      | Herhangi bir "token tree" ağacını temsil eder.                        | Herhangi bir Rust kodu parçası olabilir           |
+
+## Örnekler
+
+Aşağıdaki kod parçalarında farklı senaryoların ele alındığı procedural makrolar yer almaktadır. İlk örnek bir model
+nesnesi için gerekli struct'ı kolayca oluşturmak için kullanılır.
+
+```rust
+macro_rules! crud {
+    ($struct_name:ident, $($field_name:ident: $field_type:ty),*) => {
+        #[derive(Debug)]
+        struct $struct_name {
+            $(
+                $field_name: $field_type,
+            )*
+        }
+
+        impl $struct_name {
+            fn new($($field_name: $field_type),*) -> $struct_name {
+                $struct_name { $($field_name),* }
+            }
+        }
+    };
+}
+
+crud!(Product, id: i32,title: String,list_price:f32,category: String);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_crud_macro() {
+        let c64 = Product::new(
+            1,
+            "C64 monitor 14.1inch".to_string(),
+            999.99,
+            "Retro Computer".to_string(),
+        );
+        assert_eq!(c64.id, 1);
+        assert_eq!(c64.title, "C64 monitor 14.1inch".to_string());
+        assert_eq!(c64.list_price, 999.99);
+        assert_eq!(c64.category, "Retro Computer".to_string());
+    }
+}
+```
+
+Örneğin Product, Customer, Order, Category ve benzeri entity nesnelerinin yer aldığı bir senaryoda her birisi için ayrı
+ayrı struct geliştirmek yerine bir makro ile kod tekrarlarının önüne geçebilir, veri yapılarını basitçe
+tanımlayabiliriz. crud isimli makro argüman olarak gelen identifier ve type bilgilerini kullanarak struct'ın temel
+halini inşa eder ve aynı zamanda new metodunu otomatik olarak implemente eder.
