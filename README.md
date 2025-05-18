@@ -19,7 +19,7 @@ yer aldığı repodur.
     - [Ders 10 - Smart Pointers](./Lesson_10/Readme.md)
     - [Ders 11 - Threads](./Lesson_11/README.md)
     - [Ders 12 - Channels](./Lesson_12/README.md)
-    - [Ders 13 - Macros]()
+    - [Ders 13 - Macros](./Lesson_13/README.md)
     - [Destekleyici Bölümler]()
         - [Birim Test](UnitTests.md)
         - [Hata Yönetimi](ErrorHandling.md)
