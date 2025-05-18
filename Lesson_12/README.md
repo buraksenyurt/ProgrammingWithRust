@@ -1,6 +1,10 @@
 # Ders 12: Channels
 
-Bazı durumlarda thread'ler arasında veri aktarımı gerekebilir. Channel enstrümanı farklı thread'ler arasında veri taşınması için kullanılmaktadır. Rust standart kütüphanesi varsayılan olarak **Multi Producer - Single Consumer** türünü destekler. Farklı senaryolar için tokio, crossbeam gibi küfelerden de yararlanılabilir. **MPSC** senaryosunda producer yani veri yayımını gerçekleştiren n sayıda iş parçacığı varken tek bir tüketici ya da dinleyici söz konusudur. Kanallar aşağıdaki gibi senaryolarda sıklıkla tercih edilir;
+Bazı durumlarda thread'ler arasında veri aktarımı gerekebilir. Channel enstrümanı farklı thread'ler arasında veri
+taşınması için kullanılmaktadır. Rust standart kütüphanesi varsayılan olarak **Multi Producer - Single Consumer** türünü
+destekler. Farklı senaryolar için tokio, crossbeam gibi küfelerden de yararlanılabilir. **MPSC** senaryosunda producer
+yani veri yayımını gerçekleştiren n sayıda iş parçacığı varken tek bir tüketici ya da dinleyici söz konusudur. Kanallar
+aşağıdaki gibi senaryolarda sıklıkla tercih edilir;
 
 - Görev _(task)_ sonuçlarının ana bir thread içerisine toplanması
 - HTTP isteklerinin paralel olarak işlenmesi
@@ -9,7 +13,10 @@ Bazı durumlarda thread'ler arasında veri aktarımı gerekebilir. Channel enstr
 - Okuma → işleme → yazma akışının parçalanarak thread’lere dağıtılması
 - Merkezi log toplayıcı yapılar
 
-Kanallarda sahiplik _(Ownership)_ kurallarına uygunluk vardır. Veri gönderildiğinde, alıcı taraf bunu recv() veya iter() fonksiyonları ile alır. Sahiplik göndericiden devralınır. Asenkron ve senkron uyarlamaları yazmak mümkündür. **Tokio** veya **async-std** gibi asenkron çalışma ortamları için defacto haline gelmiş olan **tokio::sync::mpsc** küfesi kullanılır. Performans gereksinimi olan durumlarda ise **crossbeam-channel** tercih edilebilir.
+Kanallarda sahiplik _(Ownership)_ kurallarına uygunluk vardır. Veri gönderildiğinde, alıcı taraf bunu recv() veya iter()
+fonksiyonları ile alır. Sahiplik göndericiden devralınır. Asenkron ve senkron uyarlamaları yazmak mümkündür. **Tokio**
+veya **async-std** gibi asenkron çalışma ortamları için defacto haline gelmiş olan **tokio::sync::mpsc** küfesi
+kullanılır. Performans gereksinimi olan durumlarda ise **crossbeam-channel** tercih edilebilir.
 
 ## Temel Kullanım
 
@@ -36,7 +43,13 @@ pub fn hello_channels() {
 }
 ```
 
-Bu örnekte spawn metodu ile açılan thread içerisinde message değişkeninin sahip olduğu veri ana thread'de receiver ile yakalanır ve ekrana basılır. channel çağrısı generic Sender ve Receiver veri yapılarının generic nesne örneklerini gönderir. Buna göre transmitter _(yani Sender)_ nesnesini kullanarak bir thread içerisinde kanala mesaj gönderimi sağlanabilir. Bu örnekte String türünden bir içerik gönderilmektedir. Receiver nesne örneğinin recv fonksiyonu ile de kanala bırakılan mesaj yakalanmaktadır. recv fonksiyonu kanaldaki mesaj gelene kadar çalıştığı thread'i bekletir. Örnekte dikkat edilmesi gereken noktalardan birisi de message değişkenini kanala gönderdikten sonra yeniden kullanmaya çalışmaktır. Bu aşağıdaki hatanın oluşmasına sebebp olur.
+Bu örnekte spawn metodu ile açılan thread içerisinde message değişkeninin sahip olduğu veri ana thread'de receiver ile
+yakalanır ve ekrana basılır. channel çağrısı generic Sender ve Receiver veri yapılarının generic nesne örneklerini
+gönderir. Buna göre transmitter _(yani Sender)_ nesnesini kullanarak bir thread içerisinde kanala mesaj gönderimi
+sağlanabilir. Bu örnekte String türünden bir içerik gönderilmektedir. Receiver nesne örneğinin recv fonksiyonu ile de
+kanala bırakılan mesaj yakalanmaktadır. recv fonksiyonu kanaldaki mesaj gelene kadar çalıştığı thread'i bekletir.
+Örnekte dikkat edilmesi gereken noktalardan birisi de message değişkenini kanala gönderdikten sonra yeniden kullanmaya
+çalışmaktır. Bu aşağıdaki hatanın oluşmasına sebebp olur.
 
 ```text
 error[E0382]: borrow of moved value: `message`
@@ -93,7 +106,15 @@ pub fn multi_producer() {
 }
 ```
 
-Bu örnekte 10 farklı **thread** kanala mesaj bırakır. Thread'ler **spawn** çağırısı ile ayağa kaldırılmadan önce **transmitter** nesnesinin bir klonunun oluşturulduğunda dikkat edilmelidir. Her bir **thread** kendi **transmitter** klonunu kullanarak kanala mesaj bırakır. Mesajlar kanala senkron sırada bırakılır. İlerleyen satırlarda bir **for** döngüsü ile kanala gelen mesajların **Receiver** nesnesi üzerinden yakalanması işlemi gerçekleştirilir. Dikkat edilmesi gereken noktalardan birisi de **drop** çağrısıdır. Açık bir şekilde **transmitter** nesnesi açıkça **drop** edilmiştir. Bu yapılmadığı durumda receiver dan mesajlar dinlenmeye devam eder ve program sonlanmaz. Zire klonlanan receiver örnekler halen daha yaşamaktadır. Bazı durumlarda zaten istenen bir durumdur. Sürekli dinlemede kalması gereken bir receiver gerektiren senaryolar buna örnek verilebilir. Farklı bir örnekle devam edip otomatik kapanma durumunu ele alalım.
+Bu örnekte 10 farklı **thread** kanala mesaj bırakır. Thread'ler **spawn** çağırısı ile ayağa kaldırılmadan önce *
+*transmitter** nesnesinin bir klonunun oluşturulduğunda dikkat edilmelidir. Her bir **thread** kendi **transmitter**
+klonunu kullanarak kanala mesaj bırakır. Mesajlar kanala senkron sırada bırakılır. İlerleyen satırlarda bir **for**
+döngüsü ile kanala gelen mesajların **Receiver** nesnesi üzerinden yakalanması işlemi gerçekleştirilir. Dikkat edilmesi
+gereken noktalardan birisi de **drop** çağrısıdır. Açık bir şekilde **transmitter** nesnesi açıkça **drop** edilmiştir.
+Bu yapılmadığı durumda receiver dan mesajlar dinlenmeye devam eder ve program sonlanmaz. Zire klonlanan receiver
+örnekler halen daha yaşamaktadır. Bazı durumlarda zaten istenen bir durumdur. Sürekli dinlemede kalması gereken bir
+receiver gerektiren senaryolar buna örnek verilebilir. Farklı bir örnekle devam edip otomatik kapanma durumunu ele
+alalım.
 
 ```rust
 use std::sync::mpsc::channel;
@@ -127,11 +148,16 @@ pub fn multi_producer() {
 }
 ```
 
-Bu örnekte transmitter ve transmitter_clone nesneleri tanımlandıkları thread'ler sonlandığında düşürülürler ve dolayısıyla receiver üzerinden yakalanacak kanal mesajlarının sayısı bellidir. Dolayısıyla program beklendiği şekilde tüm kanal mesajları işlendikten sonra sonlanır.
+Bu örnekte transmitter ve transmitter_clone nesneleri tanımlandıkları thread'ler sonlandığında düşürülürler ve
+dolayısıyla receiver üzerinden yakalanacak kanal mesajlarının sayısı bellidir. Dolayısıyla program beklendiği şekilde
+tüm kanal mesajları işlendikten sonra sonlanır.
 
 ## Örnek Senaryo
 
-Kanal kullanımları ile ilgili örnek bir senaryo ele alalım. Bu senaryoda sistemdeki n sayıda rapor dosyasının n thread ile işlenmesi söz konusudur. Her bir thread ele aldığı dosyayı işledikten sonra kanal üzerine bilgi bırakır. En sonunda tüm bu bilgiler receiver üzerinden toplanır. İlk versiyonda standart kütüphanenin Sender ve Receiver yapıları kullanılmaktadır.
+Kanal kullanımları ile ilgili örnek bir senaryo ele alalım. Bu senaryoda sistemdeki n sayıda rapor dosyasının n thread
+ile işlenmesi söz konusudur. Her bir thread ele aldığı dosyayı işledikten sonra kanal üzerine bilgi bırakır. En sonunda
+tüm bu bilgiler receiver üzerinden toplanır. İlk versiyonda standart kütüphanenin Sender ve Receiver yapıları
+kullanılmaktadır.
 
 ```rust
 use std::sync::mpsc::channel;
@@ -185,11 +211,16 @@ pub fn process_reports() {
 }
 ```
 
-Her dosya sıralı bir şekilde döngüye girer ve herbirisi için ayrı bir **thread** açılır. Bu thread'lerde dosyalar ile ilgili farklı iş süreçlerinin işletildiğini düşünebiliriz. Dosya işleyişlerinin farklı sürelerde gerçekleştiğini simüle etmek için rand kütüphanesi ile üretilen rastgele değerlerde beklemeler yapılmaktadır. 
+Her dosya sıralı bir şekilde döngüye girer ve herbirisi için ayrı bir **thread** açılır. Bu thread'lerde dosyalar ile
+ilgili farklı iş süreçlerinin işletildiğini düşünebiliriz. Dosya işleyişlerinin farklı sürelerde gerçekleştiğini simüle
+etmek için rand kütüphanesi ile üretilen rastgele değerlerde beklemeler yapılmaktadır.
 
 ## Asenkronluk
 
-Rust'ın MPSC modülü aslında gerçek anlamda bir asenkronluk sağlamaz. Bir başka deyişle Sender'dan mesajlar asenkron olarak ilerletilebilse de Receiver tarafı bunları senkron olarak işler. Tam bir asenkron çalışma sağlayabilmek için yardımcı küfelerden _(crates)_ yararlanılabilir. Aşağıdaki ilk senaryoda ana thread'in bloklanmasına neden olan bir döngü kullanımı söz konusudur.
+Rust'ın MPSC modülü aslında gerçek anlamda bir asenkronluk sağlamaz. Bir başka deyişle Sender'dan mesajlar asenkron
+olarak ilerletilebilse de Receiver tarafı bunları senkron olarak işler. Tam bir asenkron çalışma sağlayabilmek için
+yardımcı küfelerden _(crates)_ yararlanılabilir. Aşağıdaki ilk senaryoda ana thread'in bloklanmasına neden olan bir
+döngü kullanımı söz konusudur.
 
 ```rust
 use std::sync::mpsc::channel;
@@ -229,18 +260,20 @@ pub fn do_with_standard() {
 }
 ```
 
-// ÇALIŞMA ZAMANI GÖRÜNTÜSÜ EKLENECEK
+![Runtime](Runtime.png)
 
-Aynı örneği **tokio** küfesini kullanarak ele aldığımızda ise ana thread'in bloklanmadan for döngüsünün işletildiğini görebiliriz. Bu receiver tarafında mesajların asenkron ele alınabildiğinin de ispatıdır. tokio küfesini kullanmak için **Full feature** seti ile eklenmesi gerekmektedir.
+Aynı örneği **tokio** küfesini kullanarak ele aldığımızda ise ana thread'in bloklanmadan for döngüsünün işletildiğini
+görebiliriz. Bu receiver tarafında mesajların asenkron ele alınabildiğinin de ispatıdır. tokio küfesini kullanmak için *
+*Full feature** seti ile eklenmesi gerekmektedir.
 
 ```bash
  cargo add tokio -F full
  ```
 
- Örnek kod;
+Örnek kod;
 
  ```rust
- use std::time::Duration;
+use std::time::Duration;
 use tokio::sync::mpsc;
 
 #[tokio::main]
@@ -285,4 +318,4 @@ pub async fn do_with_tokio() {
 }
 ```
 
-// ÇALIŞMA ZAMANI ÇIKTISI EKLENECEK
+![Runtime Screenshot](TokioRuntime_02.png)
