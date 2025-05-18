@@ -1,0 +1,12 @@
+[package]
+name = "procs"
+description = "Sample procedural macros for training"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.40"
+syn = { version = "2.0.101", features = ["full"] }
