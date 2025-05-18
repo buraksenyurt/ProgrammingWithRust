@@ -143,3 +143,138 @@ mod tests {
 ayrı struct geliştirmek yerine bir makro ile kod tekrarlarının önüne geçebilir, veri yapılarını basitçe
 tanımlayabiliriz. crud isimli makro argüman olarak gelen identifier ve type bilgilerini kullanarak struct'ın temel
 halini inşa eder ve aynı zamanda new metodunu otomatik olarak implemente eder.
+
+Sıradaki örnek makro bir kod bloğunun çalışma süresini ölçümlemekte kullanılır.
+
+```rust
+macro_rules! wt {
+    ($block:block) => {{
+        let start = std::time::Instant::now();
+        let result = $block;
+        let duration = start.elapsed();
+        println!("Total execution time: {:?}", duration);
+        result
+    }};
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wt_test() {
+        let sum = wt!({
+        let mut total = 0;
+        for i in 1..100 {
+            total += i;
+        }
+        total
+    });
+        assert_eq!(sum, 4950);
+    }
+}
+```
+
+Örnekteki makro $block ifadesi ile aslında bir kod bloğunu ele alır. Bu bloğun öncesine bir sayaç yerleştirir ve son
+olarak da çıktıyı terminal ekranına basar. println! kullanımı demo ve öğrenim senaryoları için yeterlidir ancak makronun
+bir kütüphane üzerinden kullanıma açışması söz konusu olacaksa terminal bağımsız çalışan kısacası stdout üzerinden çıktı
+veren bir hale getirilmesi daha doğru olur. Bu, makronun biraz daha farklı yazılmasını gerektirebilir. Aşağıdaki kod
+parçasında bu durum ele alınmaktadır.
+
+```rust
+macro_rules! wt_with {
+    ($writer:expr, $block:block) => {{
+        use std::io::Write;
+        let start = std::time::Instant::now();
+        let result = $block;
+        let duration = start.elapsed();
+        writeln!($writer, "Total execution time: {:?}", duration).unwrap();
+        result
+    }};
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wt_with_test() {
+        let sum = wt_with!(std::io::stdout(), {
+            let mut total = 0;
+            for i in 1..100 {
+                total += i;
+            }
+            total
+        });
+        assert_eq!(sum, 4950);
+    }
+}
+```
+
+Makroya parametre atandığına dikkat edilmelidir. Bu bir nevi writeln! çağrısının hangi ortama yapılacağının
+soyutlanmasıdır. Test metodundaki gibi stdout verilmesi, bilginin terminaldeki test çıktısına yansıtılmasını sağlar.
+
+![Macro Test Result](MacroTestResult.png)
+
+Dolayısıyla çıktının writeln! makrosunu kullanabilen bir logger'a, network stream'a veya bir veritabanına aktarılması da
+mümkündür. _(Bu durum C#, Java gibi dillerdeki bileşen bağımlılıklarının metotlar üzerinden enjekte edilerek
+kullanılmasına da benzetilebilir. Daha detaylı bilgi için Dependency Injection konusuna bakılabilir)_
+
+Devam eden örnekte ise kod bloğu içerisinde gönderilen bir veri yapısının XML çıktısını hazırlayan kodların yazıldığı
+bir makro söz konusudur.
+
+```rust
+macro_rules! wt_with {
+    ($writer:expr, $block:block) => {{
+        use std::io::Write;
+        let start = std::time::Instant::now();
+        let result = $block;
+        let duration = start.elapsed();
+        writeln!($writer, "Total execution time: {:?}", duration).unwrap();
+        result
+    }};
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn xml_test() {
+        let data = xml! {
+        game {
+            id:1,
+            title:"Pacman 1983",
+            rate:9.6
+        }
+    };
+        assert_eq!(
+            data,
+            "<game id=\"1\" title=\"Pacman 1983\" rate=\"9.6\" />".to_string()
+        );
+    }
+}
+```
+
+## Procedural Macros
+
+Procedural makrolar bir Rust kodundan yararlanarak başka bir rust kodu üretilmesinde sıklıkla kullanılır. TokenStream
+girdileri ile çalışır. Temelde üç türü vardır. Derive direktifi ile kullanılanlar, attribute olarak kullanılanlar ve
+fonksiyon stilinde kullanılanlar.
+
+![Procedural Macro Types](ProceduralMacros.png)
+
+Declarative makrolar ile aralarında bazı farklılıklar da vardır. Bunlar aşağıdaki tabloda özetlenmiştir.
+
+| Özellik                  | Declarative Macros (`macro_rules!`)                    | Procedural Macros                                             |
+|--------------------------|--------------------------------------------------------|---------------------------------------------------------------|
+| **Kullanım Zorluğu**     | Basit, hızlı öğrenilir                                 | Daha karmaşıktır ve öğrenmesi zaman alır                      |
+| **Kod Genişletme**       | Pattern matching ile belirgin genişletme sağlar        | Kod analizi ile daha karmaşık işlemler yapılabilir            |
+| **Hata Mesajları**       | Derleyici hatalarının anlaşılması zor olabilir         | Daha karmaşık hatalar üretir                                  |
+| **Performans**           | Çok hızlıdır, compile-time'da minimal etkisi vardır    | Derleme süresinin artmasına neden olabilir                    |
+| **Karmaşıklık Yönetimi** | Büyük ve karmaşık işleri yönetmek zordur               | Büyük projelerde karmaşıklığın daha iyi yönetilmesini sağlar  |
+| **Kapsam**               | Kod tekrarını azaltma veya basit DSL'ler için idealdir | Gelişmiş DSL'ler, derive ve attribute işlevleri için idealdir |
+
+Procedural Macro'lar, proc-macro crate olarak adlandırılan ayrı bir kütüphanede yazılırlar. Rust söz dizimi üzerinde
+TokenStream kullanılarak işlem yapılması bazı durumlarda zorlayıcı olabilir. syn ve quote gibi küfeler genellikle işi
+kolaylaştıran enstrümanlar içerirler.

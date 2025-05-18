@@ -35,9 +35,81 @@ macro_rules! crud {
 
 crud!(Product, id: i32,title: String,list_price:f32,category: String);
 
+#[allow(unused_macros)]
+macro_rules! wt {
+    ($block:block) => {{
+        let start = std::time::Instant::now();
+        let result = $block;
+        let duration = start.elapsed();
+        println!("Total execution time: {:?}", duration);
+        result
+    }};
+}
+
+#[allow(unused_macros)]
+macro_rules! xml {
+    ($tag:ident { $($key:ident : $value:expr),* }) => {
+        format!(
+            "<{tag} {attributes} />",
+            tag = stringify!($tag),
+            attributes = vec![$(format!("{}=\"{}\"", stringify!($key), $value)),*].join(" ")
+        )
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! wt_with {
+    ($writer:expr, $block:block) => {{
+        use std::io::Write;
+        let start = std::time::Instant::now();
+        let result = $block;
+        let duration = start.elapsed();
+        writeln!($writer, "Total execution time: {:?}", duration).unwrap();
+        result
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn xml_test() {
+        let data = xml! {
+            game {
+                id:1,
+                title:"Pacman 1983",
+                rate:9.6
+            }
+        };
+        assert_eq!(
+            data,
+            "<game id=\"1\" title=\"Pacman 1983\" rate=\"9.6\" />".to_string()
+        );
+    }
+    #[test]
+    fn wt_with_test() {
+        let sum = wt_with!(std::io::stdout(), {
+            let mut total = 0;
+            for i in 1..100 {
+                total += i;
+            }
+            total
+        });
+        assert_eq!(sum, 4950);
+    }
+    #[test]
+    fn wt_test() {
+        let sum = wt!({
+            let mut total = 0;
+            for i in 1..100 {
+                total += i;
+            }
+            total
+        });
+        assert_eq!(sum, 4950);
+    }
+
     #[test]
     fn test_crud_macro() {
         let c64 = Product::new(
