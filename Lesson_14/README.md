@@ -72,10 +72,72 @@ fn get_metric() -> f64 {
 }
 ```
 
-Örnek kod sembolik olarak işlemci, bellek ve disk kullanım oranlarını takip eden fonksiyonellikleri ele alır.
-fetch_metrics metodu asenkron olarak çağırabilen bir fonksiyondur. async keyword bu nedenle kullanılmıştır. Sistemde log
-mesajlarının üretimi ve yakalanması bir kanal üzerinden gerçekleştirilir. Örnekte dikkat edileceği üzere tokio küfesi
-kullanılmıştır. Main metodu da async keyword ile imzalanmıştır. Program beş saniyede bir işlemci, bellek ve disk
-kullanımları ile ilgili bilgi alıp ekrana yazdırır.
+Örnek kod sembolik olarak işlemci, bellek ve disk kullanım oranlarını takip eden fonksiyonellikleri ele alır. Bu tip
+işlevler senkron çalışmak yerine eş zamanlı olarak işletilebilirler. task::spawn çağrısı bu görevleri başlatmak için
+kullanılır. fetch_metrics metodu **async** keyword'ü ile imzalandığından task::spawn tarafından kullanılabilir. tokio
+küfesinden gelen spawn metodunun tanımı aşağıdaki gibidir.
 
-// YENİ ÖRNEKLER EKLENECEK
+```rust
+pub fn spawn<F>(future: F) -> JoinHandle<F::Output>
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{}
+```
+
+Dikkat edileceği üzere JoinHandle nesnesi Future ve Send trait'lerini implemente eden, statik yaşam ömrüne sahip bir
+enstrümandır. Future trait esasında poll tekniğine göre asenkron olarak başlatılan operasyon tamamlandığında devreye
+girileceğini ifade eder. Burada thread'ler arası haberleşme de söz konusudur ve unsafe olan Send trait bunu garanti
+eder. Kısacası elimizde asenkron olarak başlatılan operasyonlar ve bu operasyonlar tamamlandığında devreye giren, diğer
+thread'leri kesintiye uğratmayan Handler türleri vardır. Tüm JoinHandle nesnelerinin işlerinin tamamlanmasını beklemek
+için yine Join mekanizması kullanılır.
+
+Örnekte kullanılan fetch_metrics fonksiyonu metrikler üretildikçe bu değerleri transmitter araclığı ile bir kanala
+bırakır. Kanala bırakılan bu bilgiler başka bir task içerisinden receiver nesnesi ile yakalanır ve terminale basılır.
+
+Eş zamanlı görevlerin sık kullanıldığı bir başka senaryo ise, web servislerine gönderilen taleplerle ilgilidir.
+Aşağıdaki örnek kod parçasında bir web api hizmetine örnek talepler gönderilmekte ve bu talepler asenkron çalışan
+görevler içerisinde ele alınmaktadır.
+
+```rust
+#[tokio::main]
+pub async fn main() {
+    let task_a = task::spawn(fetch_data_async(
+        "https://jsonplaceholder.typicode.com/posts/1",
+    ));
+    let task_b = task::spawn(fetch_data_async(
+        "https://jsonplaceholder.typicode.com/posts/2",
+    ));
+    let task_c = task::spawn(fetch_data_async(
+        "https://jsonplaceholder.typicode.com/posts/3",
+    ));
+
+    let (res_a, res_b, res_c) = tokio::join!(task_a, task_b, task_c);
+
+    match (res_a, res_b, res_c) {
+        (Ok(a), Ok(b), Ok(c)) => {
+            println!("{:?}", a);
+            println!("{:?}", b);
+            println!("{:?}", c);
+        }
+        _ => println!("Failed to fetch data"),
+    }
+}
+
+async fn fetch_data_async(url: &str) -> Result<String, reqwest::Error> {
+    let response = reqwest::get(url).await?;
+    response.text().await
+}
+```
+
+Web Api türünden servisler HTTP protokolünün Get, Post, Put, Delete, Patch gibi metotlarını kullanan Restful mimariye
+göre tasarlanmış hizmetlerdir. Genellikle JSON türünden veriler kullanırlar. Örnekte kullanılan dummy servis ile olan
+iletişimi kolaylaştırmak için reqwest isimli bir küfe kullanılmıştır. task_a, task_b ve task_c nesneleri ile söz konusu
+servise üç ayrı talep yapılır. Tüm bu talepler fetch_data_async isimli asenkron fonksiyon tarafından eş zamanlı olarak
+ele alınır. Api servisinden HTTP Get metodu ile veri çekme işi reqwest'in get metodu ile gerçekleştirilir ki bu metot da
+asenkron olarak çağrılabilir. await çağrısı söz konusu fonksiyona ait Future'un bir sonuç elde edene kadar beklenmesini
+söyler ancak bu diğer thread'leri engelleyen bir durum değildir.
+
+Servis haberleşmeleri ağ ortamlarında gerçekleşen süreçler olduğundan ana akışı bekletmeye neden olurlar. Cevap süreleri
+çok yüksek olsa dahi eş zamanlı olarak sayısız talebin ele alındığı durumlarda servis görevlerini asenkron başlatmak
+tercih edilen bir çözümdür. Bu mantık bir web sunucusu yazarken de geçerlidir.
