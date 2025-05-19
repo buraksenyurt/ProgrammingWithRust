@@ -1,3 +1,5 @@
+mod crawler;
+
 use rand::Rng;
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -18,6 +20,8 @@ async fn main() {
     });
 
     let _ = tokio::join!(cpu_task, memory_task, disk_task, logger_task);
+
+    // crawler::run().await;
 }
 
 async fn fetch_metrics(service_name: &str, tx: mpsc::Sender<String>) {
