@@ -1,12 +1,12 @@
 # Ders 14: Asenkron Programlama
 
-Rust eşzamanlı _(concurrent)_ programlama haricinde asenkron programlamayı da destekler. Asenkron programlama özellikle
-dosya I/O işlemleri, network operasyonları, zaman bazlı görevler _(scheduled tasks)_ ve servis iletişimi gibi beklemeye
-neden olan süreçlerde CPU'nun idle kalmak yerine bahsedilen operasyonları icra etmesi için kullanılan bir yaklaşımdır.
-Rust bu ihtiyaca async ve await anahtar kelimeleri ile cevap verir. Rust tarafında asenkron programlama süreçleri
-genellikle defacto hale gelmiş çeşitli küfeler _(crates)_ ile sağlanır. Tokio küfesi bunlar arasında en popüler
-olanlarındandır. Bunun sebebi async fn çağrıları sonucu dönen Future nesnelerini yönetecek hazır bir ortamın built-in
-olarak gelmemesidir.
+Rust eşzamanlı _(concurrent)_ programlama haricinde **asenkron** programlamayı da destekler. Asenkron programlama
+özellikle dosya I/O işlemleri, network operasyonları, zaman bazlı görevler _(scheduled tasks)_ ve servis iletişimi gibi
+beklemeye neden olan süreçlerde CPU'nun boşta kalması yerine bahsedilen operasyonları icra etmesi için kullanılan bir
+yaklaşımdır. Rust bu ihtiyaca **async** ve **await** anahtar kelimeleri ile cevap verir. Rust tarafında asenkron
+programlama süreçleri genellikle standart hale gelmiş çeşitli küfeler _(crates)_ ile de sağlanır. **Tokio** küfesi
+bunlar arasında en popüler olanlarındandır. Bunun sebebi async fn çağrıları sonucu dönen Future nesnelerini yönetecek
+hazır bir ortamı içermesidir.
 
 ## Thread vs Async/Await
 
@@ -26,10 +26,11 @@ aşağıdaki tabloda özetlenmiştir.
 ## Örnekler
 
 Asenkron programlama konseptini anlamanın en iyi yolu gerçek hayat örnekleri üzerinden ilerlemektir. Bir sunucudaki
-işlemci, bellek ve disk kullanım durumlarını anlık olarak takip eden bir sistem programı geliştirmek istediğimizi
-düşünelim. Burada donanım bazında çalışan fonksiyonellikler olduğunu ifade edebiliriz. Senkron bir okuma yerine asenkron
-olarak bu değerlerin okunması sağlanabilir. Aşağıdaki örnek kod parçasında bu durumu tokio küfesi kullanılarak simüle
-edilmektedir.
+işlemci, bellek ve disk kullanım durumlarını anlık olarak takip eden bir sistem aracı geliştirmek istediğimizi
+düşünelim. Bu senaryoda donanım bazında metrik ölçümleri yapan fonksiyonellikler olduğunu ifade edebiliriz. Senkron bir
+okuma yerine asenkron olarak bu değerlerin okunması sağlanabilir. Bir başka deyişle sistem metrikleri eş zamanlı
+çalıştırılacak görevler haline getirilip birbirlerinden bağımsız ve beklemeden işletilebilir. Aşağıdaki örnek kod
+parçasında bu durum tokio küfesi kullanılarak simüle edilmektedir.
 
 ```rust
 use rand::Rng;
@@ -73,9 +74,9 @@ fn get_metric() -> f64 {
 ```
 
 Örnek kod sembolik olarak işlemci, bellek ve disk kullanım oranlarını takip eden fonksiyonellikleri ele alır. Bu tip
-işlevler senkron çalışmak yerine eş zamanlı olarak işletilebilirler. task::spawn çağrısı bu görevleri başlatmak için
-kullanılır. fetch_metrics metodu **async** keyword'ü ile imzalandığından task::spawn tarafından kullanılabilir. tokio
-küfesinden gelen spawn metodunun tanımı aşağıdaki gibidir.
+işlevler senkron çalışmak yerine eş zamanlı olarak işletilebilirler. **task::spawn** çağrısı bu görevleri başlatmak için
+kullanılır. **fetch_metrics** metodu **async** keyword'ü ile imzalandığından **task::spawn** tarafından kullanılabilir.
+**Tokio** küfesinden gelen spawn metodunun tanımı aşağıdaki gibidir.
 
 ```rust
 pub fn spawn<F>(future: F) -> JoinHandle<F::Output>
@@ -85,15 +86,16 @@ where
 {}
 ```
 
-Dikkat edileceği üzere JoinHandle nesnesi Future ve Send trait'lerini implemente eden, statik yaşam ömrüne sahip bir
-enstrümandır. Future trait esasında poll tekniğine göre asenkron olarak başlatılan operasyon tamamlandığında devreye
-girileceğini ifade eder. Burada thread'ler arası haberleşme de söz konusudur ve unsafe olan Send trait bunu garanti
-eder. Kısacası elimizde asenkron olarak başlatılan operasyonlar ve bu operasyonlar tamamlandığında devreye giren, diğer
-thread'leri kesintiye uğratmayan Handler türleri vardır. Tüm JoinHandle nesnelerinin işlerinin tamamlanmasını beklemek
-için yine Join mekanizması kullanılır.
+Dikkat edileceği üzere **JoinHandle** nesnesi **Future** ve **Send** trait'lerini uygulayan, statik yaşam ömrüne
+sahip bir yapıdır. Future trait, poll tekniğine göre asenkron olarak başlatılan operasyon tamamlandığında
+devreye girileceğini ifade eder. Burada thread'ler arası haberleşme de söz konusudur ve **unsafe** olan **Send** trait
+bunu garanti eder. Kısacası elimizde asenkron olarak başlatılan operasyonlar ve bu operasyonlar tamamlandığında devreye
+giren, diğer thread'leri kesintiye uğratmayan **Handler** nesne örnekleri vardır. Tüm **JoinHandle** nesnelerinin
+işlerinin tamamlanmasını beklemek için yine **Join** metodu kullanılır.
 
-Örnekte kullanılan fetch_metrics fonksiyonu metrikler üretildikçe bu değerleri transmitter araclığı ile bir kanala
-bırakır. Kanala bırakılan bu bilgiler başka bir task içerisinden receiver nesnesi ile yakalanır ve terminale basılır.
+Örnekte kullanılan **fetch_metrics** fonksiyonu metrikler üretildikçe bu değerleri **transmitter** araclığı ile bir
+kanala bırakır. Kanala bırakılan veriler başka bir task içerisinden **receiver** nesnesi ile yakalanır ve terminal
+ekranına basılır.
 
 Eş zamanlı görevlerin sık kullanıldığı bir başka senaryo ise, web servislerine gönderilen taleplerle ilgilidir.
 Aşağıdaki örnek kod parçasında bir web api hizmetine örnek talepler gönderilmekte ve bu talepler asenkron çalışan
@@ -130,14 +132,15 @@ async fn fetch_data_async(url: &str) -> Result<String, reqwest::Error> {
 }
 ```
 
-Web Api türünden servisler HTTP protokolünün Get, Post, Put, Delete, Patch gibi metotlarını kullanan Restful mimariye
-göre tasarlanmış hizmetlerdir. Genellikle JSON türünden veriler kullanırlar. Örnekte kullanılan dummy servis ile olan
-iletişimi kolaylaştırmak için reqwest isimli bir küfe kullanılmıştır. task_a, task_b ve task_c nesneleri ile söz konusu
-servise üç ayrı talep yapılır. Tüm bu talepler fetch_data_async isimli asenkron fonksiyon tarafından eş zamanlı olarak
-ele alınır. Api servisinden HTTP Get metodu ile veri çekme işi reqwest'in get metodu ile gerçekleştirilir ki bu metot da
-asenkron olarak çağrılabilir. await çağrısı söz konusu fonksiyona ait Future'un bir sonuç elde edene kadar beklenmesini
-söyler ancak bu diğer thread'leri engelleyen bir durum değildir.
+Web Api türünden servisler **HTTP** protokolünün **Get, Post, Put, Delete, Patch** gibi metotlarını kullanan **Restful**
+mimariye göre tasarlanmış hizmetlerdir. Servis haberleşmesinde genellikle **JSON** türünden veriler kullanırlar. Örnekte
+kullanılan dummy servis ile olan iletişimi kolaylaştırmak için **reqwest** isimli bir küfe kullanılmıştır. **task_a**,
+**task_b** ve **task_c** nesneleri ile söz konusu servise üç ayrı talep yapılır. Tüm talepler **fetch_data_async**
+isimli asenkron fonksiyon tarafından eş zamanlı olarak ele alınır. Api servisinden **HTTP Get** metodu ile veri çekme
+işi reqwest'in **get** metodu ile gerçekleştirilir ki bu metot da asenkron olarak çağrılabilir. **await** çağrısı söz
+konusu fonksiyona ait **Future** nesnesinin bir sonuç elde edene kadar beklenmesini söyler ancak bu diğer iş
+parçacıklarının _(thread)_ çalışmasını engelleyen bir durum değildir.
 
-Servis haberleşmeleri ağ ortamlarında gerçekleşen süreçler olduğundan ana akışı bekletmeye neden olurlar. Cevap süreleri
-çok yüksek olsa dahi eş zamanlı olarak sayısız talebin ele alındığı durumlarda servis görevlerini asenkron başlatmak
-tercih edilen bir çözümdür. Bu mantık bir web sunucusu yazarken de geçerlidir.
+Servis haberleşmeleri ağ ortamlarında gerçekleşen süreçler olduğundan ana kod akışını belirsiz sürelerde bekletmeye
+meğillidir. Cevap süreleri çok yüksek olsa dahi eş zamanlı olarak sayısız talebin ele alındığı durumlarda servis
+görevlerini asenkron başlatmak tercih edilen bir çözümdür. Bu mantık bir web sunucusu yazarken de geçerlidir.
