@@ -1,15 +1,15 @@
 # Ders 13: Macros
 
-Makrolar meta programlamanın temel unsurlarındadır. Meta programlama kod yazan kodlar oluşturulmasını benimseyen bir
-yaklaşımdır. Makroları kullanarak kod tekrarını azaltabilir ve daha okunabilir kodların oluşturulmasını sağlayabiliriz.
-Makrolar ile delerme zamanında kaynak kod üzerinde manipülasyon da yapılabilir. Ayrıca struct, enum, fn gibi yapıların
-derleme zamanında analiz edilip yeni kodların üretilmesini de sağlayabiliriz. Bugüne kadarki örneklerimizde bir çok
-makro kullandık. println!, write!, vec! gibi sonu ! ile biten enstrümanlar aslında birer makrodur. Makroları Declarative
-_(Bildirime dayalı)_ ve Procedural _(Yönergelere dayalı)_ olmak üzere iki ana kategoriye ayırabiliriz.
+Makrolar kod yazan kodlar oluşturulmasını benimseyen bir meta programlama yaklaşımdır. Makroları kullanarak kod
+tekrarlarını azaltabilir, daha okunabilir kodlar oluşturulabilir, delerme zamanında kaynak kod üzerinde değişikliler
+yapılabilir. Ayrıca **struct**, **enum**, **fn** gibi yapıların derleme zamanında analiz edilip yeni kodların üretilmesi
+de sağlanabilir. Önceki örneklerde bir çok makro kullanılmıştır. **println!**, **write!**, **vec!** gibi sonu **!** ile
+biten enstrümanlar aslında birer makrodur. Makrolar Declarative _(Bildirime dayalı)_ ve Procedural _(Yönergelere
+dayalı)_ olmak üzere iki ana kategoriye ayrılır.
 
 ## Hello Macro _(Declarative)_
 
-Makrolar belli bir fonksiyonelliğin farklı türevlerinin yazmaktan kaçınmamızı da sağlar. Aşağıdaki basit fonksiyonu göz
+Makrolar ile belli bir fonksiyonelliğin farklı türevlerinin yazmak zorunda kalmayız. Aşağıdaki basit fonksiyonu göz
 önüne alalım.
 
 ```rust
@@ -32,10 +32,9 @@ mod tests {
 }
 ```
 
-max_of_two fonksiyonu iki integer değerden hangisi büyükse onu geriye döndürmek amacıyla tasarlanmıştır. Ancak n adet
-sayının birbiriyle karşılaştırılmasını istediğimiz bir durumda ne yaparız? Bu genellikle yeni bir fonksiyon yazılmasını
-gerektirecektir. Bunun yerine bir makro hazırlayıp, sum_of fonksiyon bloğunun gelen koşullara göre üretilmesini de
-sağlayabiliriz.
+**max_of_two** fonksiyonu iki tam sayı değerden hangisi büyükse onu geriye döndürmek amacıyla tasarlanmıştır. Ancak n
+adet sayının birbiriyle karşılaştırılması istendiğinde fonksiyonun farkı bir versiyonunun yazılması gerekir. Bunun
+yerine bir makro hazırlayıp, **max_of** fonksiyon bloğunun gelen koşullara göre üretilmesini sağlanabilir.
 
 ```rust
 macro_rules! max_of {
@@ -66,21 +65,22 @@ mod tests {
 }
 ```
 
-Declarative yani bildirime dayalı makrolar yazmak için macro_rules isimli başka bir makro kullanılır. Kendi yazdığımız
-makrolar dahil isimlendirmelerde fonksiyon adı ! işareti ile sonlandırılır. Örnekte bazı özel kalıpları kullanılmıştır.
+Declarative yani bildirime dayalı makrolar yazmak için **macro_rules** isimli başka bir makro kullanılır. Kendi
+yazdığımız makrolar dahil isimlendirmelerde fonksiyon adı **!** işareti ile sonlandırılır. Örnekte bazı özel kalıplar
+kullanılmıştır.
 
-- ($x:expr) => { $x } : Tek bir argüman ile çalışılacağını belirtir. expr ile bir expression türü ifade edilir.
+- ($x:expr) => { $x } : Tek bir argüman ile çalışılacağını belirtir. **expr** ile bir **expression** türü ifade edilir.
   Dolayısıyla makronun uygulandığı yapıda tek bir sayısal ifade varsa doğrudan döndüren bir kod bloğu üretilecektir.
-- ($x:expr, $y:expr) => { ... } : Bu kısımda ise iki argümanla eşleşilen durumu ele alır. Burada if kullanılan bir kod
+- ($x:expr, $y:expr) => { ... } : Bu kısımda ise iki argümanla eşleşilen durum ele alınır. **if** kullanılan bir kod
   bloğunun üretimi sağlanır.
 - ($x:expr, $($y:expr),+) => { ... } : Bu kalıpsa iki veya daha fazla argüman için geçerlidir. İkinci söz diziminde yer
-  alan + operaötörü en az bir veya daha fazla anlamındadır. Bu durumla karşılaşılması halinde recursive olarak kendisini
-  çağıran bir fonksiyon kodu üretilecektir.
+  alan **+** operaötörü en az bir veya daha fazla anlamına gelir. Bu durumla karşılaşılması halinde **recursive** olarak
+  kendisini çağıran bir fonksiyon kodu üretilir.
 
 ## MetaSyntactic Variables
 
-Makrolarda ifadeleri analiz etmek ve eşleşmeleri yakalamak için token'lar kullanılır. Bunlardan en çok kullanılanlar
-aşağıdaki tabloda belirtilmektedir.
+Makrolarda ifadeleri analiz etmek ve eşleşmeleri yakalamak için **token**'lar kullanılır. En sık kullanılan token
+değerleri aşağıdaki tabloda özetlenmiştir.
 
 | Token     | Açıklama                                                              | Örnek                                             |
 |-----------|-----------------------------------------------------------------------|---------------------------------------------------|
@@ -97,8 +97,8 @@ aşağıdaki tabloda belirtilmektedir.
 
 ## Örnekler
 
-Aşağıdaki kod parçalarında farklı senaryoların ele alındığı procedural makrolar yer almaktadır. İlk örnek bir model
-nesnesi için gerekli struct'ı kolayca oluşturmak için kullanılır.
+Aşağıdaki kod parçalarında farklı senaryoların ele alındığı **procedural** makro örnekleri yer almaktadır. İlk örnek bir
+model nesnesi için gerekli struct'ın kolayca oluşturulması için kullanılır.
 
 ```rust
 macro_rules! crud {
@@ -139,12 +139,13 @@ mod tests {
 }
 ```
 
-Örneğin Product, Customer, Order, Category ve benzeri entity nesnelerinin yer aldığı bir senaryoda her birisi için ayrı
-ayrı struct geliştirmek yerine bir makro ile kod tekrarlarının önüne geçebilir, veri yapılarını basitçe
-tanımlayabiliriz. crud isimli makro argüman olarak gelen identifier ve type bilgilerini kullanarak struct'ın temel
-halini inşa eder ve aynı zamanda new metodunu otomatik olarak implemente eder.
+Örneğin **Product**, **Customer**, **Order**, **Category** ve benzeri entity nesnelerinin yer aldığı bir senaryoda her
+biri için ayrı ayrı **struct** yazmak yerine bir makro ile kod tekrarlarının önüne geçebilir. **crud** isimli makro
+argüman olarak gelen **identifier** ve **type** bilgilerini kullanarak **struct**'ın temel halini inşa eder ve aynı
+zamanda **new** metodunu da otomatik olarak implemente eder. Bu senaryo veri model nesnelerinin farklı kaynaklardan
+geldiği _(örneğin metin tabanlı dosyalar)_ durumlarda kullanışlı olabilir. Bunu araştırıp deneyiniz.
 
-Sıradaki örnek makro bir kod bloğunun çalışma süresini ölçümlemekte kullanılır.
+Sıradaki makro bir kod bloğunun çalışma süresini ölçümlemek için kullanılır.
 
 ```rust
 macro_rules! wt {
@@ -175,11 +176,11 @@ mod tests {
 }
 ```
 
-Örnekteki makro $block ifadesi ile aslında bir kod bloğunu ele alır. Bu bloğun öncesine bir sayaç yerleştirir ve son
-olarak da çıktıyı terminal ekranına basar. println! kullanımı demo ve öğrenim senaryoları için yeterlidir ancak makronun
-bir kütüphane üzerinden kullanıma açışması söz konusu olacaksa terminal bağımsız çalışan kısacası stdout üzerinden çıktı
-veren bir hale getirilmesi daha doğru olur. Bu, makronun biraz daha farklı yazılmasını gerektirebilir. Aşağıdaki kod
-parçasında bu durum ele alınmaktadır.
+Örnekteki makro **$block** ifadesi ile aslında bir kod bloğunu ele alır. Bu bloğun öncesine bir sayaç yerleştirir ve son
+olarak da çıktıyı terminal ekranına basar. **println!** kullanımı demo ve öğrenim senaryoları için yeterlidir ancak
+makronun bir kütüphane üzerinden kullanıma açışması söz konusu ise terminal bağımsız çalışan kısacası **stdout**
+üzerinden çıktı veren bir hale getirilmesi daha doğrudur. Bu, makronun biraz daha farklı yazılmasını gerektirebilir.
+Aşağıdaki kod parçasında bu durum ele alınmaktadır.
 
 ```rust
 macro_rules! wt_with {
@@ -211,17 +212,19 @@ mod tests {
 }
 ```
 
-Makroya parametre atandığına dikkat edilmelidir. Bu bir nevi writeln! çağrısının hangi ortama yapılacağının
-soyutlanmasıdır. Test metodundaki gibi stdout verilmesi, bilginin terminaldeki test çıktısına yansıtılmasını sağlar.
+Makroya parametre atandığına dikkat edilmelidir. Bu, bir nevi **writeln!** çağrısının hangi ortama yapılacağının
+soyutlanmasıdır. **Test** metodundaki gibi **stdout** verilmesi, bilginin terminaldeki test çıktısına yansıtılmasını
+sağlar.
 
 ![Macro Test Result](MacroTestResult.png)
 
-Dolayısıyla çıktının writeln! makrosunu kullanabilen bir logger'a, network stream'a veya bir veritabanına aktarılması da
-mümkündür. _(Bu durum C#, Java gibi dillerdeki bileşen bağımlılıklarının metotlar üzerinden enjekte edilerek
-kullanılmasına da benzetilebilir. Daha detaylı bilgi için Dependency Injection konusuna bakılabilir)_
+Dolayısıyla çıktının **writeln!** makrosunu kullanabilen bir **logger** nesnesine, **network** stream'a veya bir
+veritabanına aktarılması da mümkündür. _(Bu durum C#, Java gibi dillerdeki bileşen bağımlılıklarının metotlar üzerinden
+enjekte edilerek kullanılmasına da benzetilebilir. Daha detaylı bilgi için **Dependency Injection** konusuna
+bakılabilir)_
 
-Devam eden örnekte ise kod bloğu içerisinde gönderilen bir veri yapısının XML çıktısını hazırlayan kodların yazıldığı
-bir makro söz konusudur.
+Devam eden örnekte ise kod bloğu içerisinde gönderilen bir veri yapısının **XML** çıktısını hazırlayan kodların
+yazıldığı bir makro söz konusudur.
 
 ```rust
 macro_rules! wt_with {
@@ -258,13 +261,15 @@ mod tests {
 
 ## Procedural Macros
 
-Procedural makrolar bir Rust kodundan yararlanarak başka bir rust kodu üretilmesinde sıklıkla kullanılır. TokenStream
-girdileri ile çalışır. Temelde üç türü vardır. Derive direktifi ile kullanılanlar, attribute olarak kullanılanlar ve
-fonksiyon stilinde kullanılanlar.
+**Procedural** makrolar bir Rust kodundan yararlanarak başka bir rust kodu üretilmesinde sıklıkla kullanılır.
+**TokenStream** girdileri ile çalışır. Bu nedenle dilin genel semantik yapısına ve abstract syntax tree gibi kavramlara
+aşina olmakta yarar vardır. Temelde üç tür **procedural** makro vardır. **Derive** direktifi ile kullanılanlar,
+**attribute** şeklinde tasarlananlar ve fonksiyon stilinde yazılanlar.
 
 ![Procedural Macro Types](ProceduralMacros.png)
 
-Declarative makrolar ile aralarında bazı farklılıklar da vardır. Bunlar aşağıdaki tabloda özetlenmiştir.
+**Procedural** ve **Declarative** makrolar arasında bazı temel farklılıklar vardır. Bunlar aşağıdaki tabloda
+özetlenmiştir.
 
 | Özellik                  | Declarative Macros (`macro_rules!`)                    | Procedural Macros                                             |
 |--------------------------|--------------------------------------------------------|---------------------------------------------------------------|
@@ -275,9 +280,9 @@ Declarative makrolar ile aralarında bazı farklılıklar da vardır. Bunlar aş
 | **Karmaşıklık Yönetimi** | Büyük ve karmaşık işleri yönetmek zordur               | Büyük projelerde karmaşıklığın daha iyi yönetilmesini sağlar  |
 | **Kapsam**               | Kod tekrarını azaltma veya basit DSL'ler için idealdir | Gelişmiş DSL'ler, derive ve attribute işlevleri için idealdir |
 
-Procedural Macro'lar, proc-macro crate olarak adlandırılan ayrı bir kütüphanede yazılırlar. Rust söz dizimi üzerinde
-TokenStream kullanılarak işlem yapılması bazı durumlarda zorlayıcı olabilir. syn ve quote gibi küfeler genellikle işi
-kolaylaştıran enstrümanlar içerirler.
+Procedural makrolar, **proc-macro** crate olarak adlandırılan ayrı bir kütüphane formatında yazılırlar. Rust söz dizimi
+üzerinde **TokenStream** kullanılarak işlem yapılması bazı durumlarda zorlayıcı olabilir. **syn** ve **quote** gibi
+küfeler genellikle işi kolaylaştıran enstrümanlar içerirler.
 
 ## Örnek Procedural Macro
 
@@ -291,14 +296,15 @@ cargo add quote
 cargo add syn -F full
 ```
 
-Ardından toml dosyasında bu küfenin bir procedural macro olarak ele alınması gerektiği bildirilir.
+Ardından **toml** dosyasında bu küfenin procedural bir macro kütüphanesi olarak ele alınması gerektiği belirtilir.
 
 ```toml
 [lib]
 proc-macro = true
 ```
 
-Aşağıda kodun çalışma zamanının ölçen bir işlevselliğin procedural macro olarak nasıl yazılabileceği örneklenmektedir.
+Aşağıda kodun çalışma zamanını ölçen bir işlevselliğin **procedural macro** olarak nasıl yazılabileceği
+örneklenmektedir.
 
 ```rust
 extern crate proc_macro;
@@ -325,15 +331,16 @@ pub fn work_time_effort(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 ```
 
-İlgili makro parametre olarak TokenStream'ler alır. Özellikle item değişkeni kod içerisinde kullanılır. item değişkeni
-ile gelen TokenStream parse_macro_input! makrosu kullanılarak içeriği ele alınabilir bir türe dönüştürülür. Buradan
-hareketle makronun uygulandığı metodun adı ve gövdesi yakalanbilir.
+İlgili makro parametre olarak **TokenStream**'ler alır. Özellikle **item** değişkeni kod içerisinde kullanılır. item
+değişkeni ile gelen **TokenStream**, **parse_macro_input!** makrosu kullanılarak içeriği ele alınabilir bir türe
+dönüştürülür. Bir başka deyişle stream üzerinden gelen kod içerisindeki unsurlar özellik şeklinde ele alınabilir hale
+gelir. Buradan hareketle makronun uygulandığı metodun adı ve gövdesi yakalanmaktadır.
 
-İlerleyen adımda quote! makrosu ile yeni bir fonksiyon hazırlanır. Dikkat edileceği üzere gelen fonksiyon bloğunun
+İlerleyen adımda **quote!** makrosu ile yeni bir fonksiyon hazırlanır. Dikkat edileceği üzere gelen fonksiyon bloğunun
 öncesine ve sonrasına yeni kod parçaları eklenmektedir. Makro çıktı olarak üretilen yeni kod parçasını yine bir
-TokenStream olarak dışarı verir.
+**TokenStream** olarak dışarı verir.
 
-Bu makro herhangibir metot için aşağıdaki gibi kullanılabilir.
+Bu makro herhangi bir metot için aşağıdaki gibi kullanılabilir.
 
 ```rust
 mod samples;
@@ -354,8 +361,8 @@ fn main() {
 }
 ```
 
-Bir procedural macro küfesini kullanmak için ilgili projeye dependency olarak bildirilmesi gerekir. Bunun için toml
-dosyasındaki ilgili kısım değiştirilmelidir. Örneğin,
+Bir procedural macro küfesini kullanmak için ilgili projeye **dependency** olarak bildirilmesi gerekir. Bunun için makro
+kütüphanesini kullanacak projenin **toml** dosyasında aşağıdaki gibi bir değişiklik yapılmalıdır.
 
 ```toml
 [dependencies]
