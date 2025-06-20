@@ -90,7 +90,6 @@ impl Draw for Player {
 Bu tasarıma göre **draw** davranışını uygulamış belli sayıda nesne için tek bir **for** döngüsü üzerinden işlem yapan ve gelen nesnelerin **draw** fonksiyonlarını işleten bir metot yazılması istenmektedir. Aşağıdaki metotlardan hangisi doğrudur?
 
 **a)**
-
 ```rust
 fn draw_shapes(shapes: &Vec<&dyn Draw>) {
     for shape in shapes.iter() {
@@ -100,7 +99,6 @@ fn draw_shapes(shapes: &Vec<&dyn Draw>) {
 ```
 
 **b)**
-
 ```rust
 fn draw_shapes(shapes: &Vec<Draw>) {
     for shape in shapes.iter() {
@@ -110,7 +108,6 @@ fn draw_shapes(shapes: &Vec<Draw>) {
 ```
 
 **c)**
-
 ```rust
 fn draw_shapes(shapes: [&dyn Draw]) {
     for shape in shapes.iter() {
@@ -120,7 +117,6 @@ fn draw_shapes(shapes: [&dyn Draw]) {
 ```
 
 **d)**
-
 ```rust
 fn draw_shapes(shapes: &Vec<&Draw>) {
     for shape in shapes.iter() {
@@ -171,4 +167,169 @@ Yukarıdaki kod parçası derleme zamanında **Value used after being moved [E03
 **d)** your_speed değişkeni accelerate fonksiyonuna geçirilirken kopyalanmadan taşınır ve accelerate işleyişini tamamlandığında sahipliği alınan your_speed bellekten düşer. Bu, devam eden satırda olmayan bir referans erişimine sebebiyet verir ve value moved hatası oluşur. Hatanın çözümü için Velocity yapısına Clone trait'ini uygulamak gerekir ve accelerate(your_speed.clone()) şeklinde çağrılmalıdır. 
 
 ## Soru 5
+
+**Trait** ve **closure**’lar sıklıkla bir arada ele alınır. Bir **closure** anonim fonksiyon olarak da ifade edilir. Özellikle fonksiyonel dillerde yaygın olarak kullanılan closure'lar, bir değişkene atanabilir ve bu sayede fonksiyonlara parametre olarak kod bloklarının taşınması sağlanabilir. Benzer şekilde fonksiyonlardan dönüş türü olarak da kullanılabilir. Böylece nesne toplulukları üzerinde aynı kod bloğunu işleten fonksiyonları geliştirmek oldukça kolaylaşır. Tüm iteratif fonksiyonlar bu tekniğe göre geliştirilmiştir. Rust, closure kullanımlarında kısıtlar _(Constraints)_ da kullanır ve bunu üç farklı **trait** ile sağlar.
+
+- **Fn:** Closure, dışarıdan yakaladığı değişkenleri salt okunur _(read only)_ şekilde kullanır.
+- **FnMut:** Closure, dış değişkenleri değiştirerek _(mutable)_ kullanabilir.
+- **FnOnce:** Closure, dış değişkenleri sahiplenir _(move eder)_ ve yalnızca bir kez çağrılabilir.
+
+Geliştirdiğimiz örnekte bir oyun sahasındaki nesneler üzerinde parametre olarak gönderilen kod bloğunu işletecek genel bir fonksiyon yazmak istediğimizi düşünelim.
+
+```rust
+pub fn main() {
+    let mut world = GameWorld {
+        players: vec![
+            Player {
+                id: 1,
+                position: (0.0, 0.0),
+                velocity: (2.0, 0.0),
+                score: 0,
+            },
+            Player {
+                id: 2,
+                position: (100.0, 0.0),
+                velocity: (8.0, 0.0),
+                score: 0,
+            },
+        ],
+    };
+
+    let apply_gravity = |entity: &mut Player| {
+        entity.position.0 += entity.velocity.0 * 0.9;
+        entity.position.1 += entity.velocity.1 * 0.9;
+    };
+
+    println!("Before Update: {:?}", world.players);
+    update_players_system(&mut world, apply_gravity);
+}
+```
+
+Bu kod parçasını göz önüne alırsak aşağıdakilerden hangisi update_players_system’in doğru bir tanımıdır?
+
+**a)**
+```rust
+fn update_players_system<F>(world: &mut GameWorld, mut f: F)
+where
+    F: Fn(&mut Player),
+{
+    for p in &mut world.players {
+        f(p);
+    }
+}
+```
+
+**b)**
+```rust
+fn update_players_system<F>(mut world: GameWorld, mut f: F)
+where
+    F: FnMut(&Player),
+{
+    for p in &world.players {
+        f(p);
+    }
+}
+```
+
+**c)**
+```rust
+fn update_players_system<F>(world: &mut GameWorld, f: F)
+where
+    F: FnMut(Player),
+{
+    for mut p in world.players {
+        f(p);
+    }
+}
+```
+
+**d)**
+```rust
+fn update_players_system<F>(world: &mut GameWorld, mut f: F)
+where
+    F: FnOnce(&mut Player),
+{
+    for p in &mut world.players {
+        f(p);
+    }
+}
+```
+
+## Soru 6
+
+Aşağıda verilen kod parçası bir closure ifadesi döndürüyor.
+
+```rust
+use crate::models::{Level, Log};
+use std::io::{Write, stdout};
+
+pub fn log() -> impl FnMut(&Log) {
+    let mut error_count = 0;
+    let mut warn_count = 0;
+    let mut info_count = 0;
+    move |l| {
+        stdout()
+            .write(format!("{}\n", l.to_string()).as_bytes())
+            .unwrap();
+        match l.level {
+            Level::Error => error_count += 1,
+            Level::Warn => warn_count += 1,
+            Level::Info => info_count += 1,
+            _ => {}
+        }
+        stdout()
+            .write(
+                format!(
+                    "Log Tracker: {} errors, {} warnings, {} infos\n",
+                    error_count, warn_count, info_count
+                )
+                    .as_bytes(),
+            )
+            .unwrap();
+    }
+}
+```
+
+Buna göre aşağıdaki şıklarda belirtilen ifadelerden hangisi doğrudur?
+
+**a)** Closure Copy trait’ine sahiptir, dolayısıyla her çağrıldığında iç sayaçlar sıfırdan başlar.
+
+**b)** Dönüş tipi impl Fn(&Log) olarak da yazılabilir çünkü closure yalnızca okuma yapmaktadır.
+
+**c)** Closure, mut olarak çağrılmak zorundadır çünkü error_count, warn_count, info_count değerleri her çağrımda değişir. Bu nedenle dönüş tipi impl FnMut(&Log) olarak belirtilmiştir.
+
+**d)** Kodda move ifadesinin kullanılmasına gerek yoktur. error_count, warn_count, info_count değerleri heap üzerinde tutulmadığı için closure zaten bu değerlere doğrudan erişebilir.
+
+## Soru 7
+
+Aşağıdaki kod parçasını dikkatlice inceleyiniz.
+
+```rust
+fn main() {
+    create()
+}
+enum Tree {
+    Node(i32, Tree, Tree),
+    Empty,
+}
+
+pub fn create() {
+    let left_child = Tree::Node(1, Tree::Empty, Tree::Empty);
+    let right_child = Tree::Node(3, Tree::Empty, Tree::Empty);
+    let root = Tree::Node(2, left_child, right_child);
+}
+```
+
+Yukarıdaki kod derleme zamanında **error[E0391]: cycle detected when computing when `Tree` needs drop** hatası verir. Bu hatanın sebebi şıklardan hangisidir?
+
+**a)** Enum yapısında Empty varyantının bulunması Node varyantını geçersiz kılıp Rust’ın match yapısının kullanmasını gerektirdiği için hata alınır.
+
+**b)** Enum Tree kendi içinde doğrudan kendisini barındırdığı için sonsuz büyüklükte bir veri yapısı oluşur ve bu kontrol edilebilir değildir. Çözüm için Box<Tree> gibi bir Smart Pointer kullanılarak recursive alanların heap’e taşınması sağlanmalıdır.
+
+**c)** Tree yapısı içinde kullanılan i32 türünün Drop trait'ini implemente etmemesi sebebiyle hata oluşur.
+
+**d)** Rust, enum türleri içinde başka enum’ları doğrudan kullanmayı desteklemez. Bu nedenle Tree enum’unun kendi türünde alanları olamaz.
+
+## Soru 8
+
 
