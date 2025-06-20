@@ -680,3 +680,24 @@ Yukarıdaki kod parçası ile ilgili olarak aşağıda verilen bilgilerden hangi
 **c)** logger_task isimli değişken farklı bir asenkron görevi işletir ve kanala gelen metrik değerleri Receiver nesnesi aracılığıyla okuyarak ekrana yazdırır.
 
 **d)** Concurrent başlatılan görevler birbirine bekler konumda kalan thread’ler oluşmasına sebep olur ve bu durum çalışma zamanında deadlock oluşmasına sebebiyet verir.
+
+## Cevap Anahtarı
+
+_Tüm sorular 10 puandır._
+
+1. D
+2. C
+3. A
+4. D
+5. A
+6. C
+7. B
+8. B
+9. A
+10. B
+11. C
+12. A
+13. C
+14. D
+15. C
+16. D
