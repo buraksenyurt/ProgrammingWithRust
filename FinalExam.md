@@ -452,7 +452,7 @@ Aynı anda birden fazla iş parçacığı _(thread)_ ortak bir referansa erişme
 
 **a)** Data vector yerine referans türlü bir diziye alınırsa sorun çözülür.
 
-**b)** Data Arc (Atomic Reference Counting) smart pointer nesnesi içinde ele alınmalı ve döngüde açılan her bir thread örneği klonlanarak paylaşılmalıdır
+**b)** Data Arc _(Atomic Reference Counting)_ smart pointer nesnesi içinde ele alınmalı ve döngüde açılan her bir thread örneği klonlanarak paylaşılmalıdır
 
 **c)** data vektörü her thread::spawn çağrısında yeniden tanımlanmalıdır. Böylece her thread kendi data kopyasına sahip olur ve ownership sorunu yaşanmaz.
 
@@ -460,3 +460,43 @@ Aynı anda birden fazla iş parçacığı _(thread)_ ortak bir referansa erişme
 
 ## Soru 11
 
+Rust programlama dili **thread-safe** bir ortam sağlamak için bazı kuralları devreye alsa da **Deadlock** veya **mutex poisoning** gibi durumlardan **kaçılamayabilir**. Kilit mekanizmalarının hatalı kullanımları **Deadlock** oluşmasına sebep olur. Diğer yandan bir kilit söz konusu iken bulunulan **thread** içerisinde panik oluşması da sorun yaratır ve bu durum **Thread Poisoning** olarak adlandırılır. Aşağıdaki örnek kod parçasında bu problemlerden hangisi meydana gelir?
+
+```rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+fn main() {
+    do_something();
+    println!("After the thread calling");
+}
+pub fn do_something() {
+    let number = Arc::new(Mutex::new(1));
+    let mut handles = vec![];
+
+    for i in 0..10 {
+        let number = Arc::clone(&number);
+        let handle = thread::spawn(move || {
+            println!("For counter is {}", i);
+            let mut num = number.lock().unwrap();
+            let mut another_num = number.lock().unwrap();
+            *num += 1;
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        println!("Joining handle");
+        handle.join().unwrap();
+    }
+
+    println!("{:?}", number.lock().unwrap());
+}
+```
+
+**a)** Thread Poisoning
+
+**b)** Kod problemsiz çalışır
+
+**c)** Deadlock
+
+**d)** Handles değişkeni için derleme zamanında Value Moved Here hatası alınır
