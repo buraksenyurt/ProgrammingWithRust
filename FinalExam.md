@@ -500,3 +500,183 @@ pub fn do_something() {
 **c)** Deadlock
 
 **d)** Handles değişkeni için derleme zamanında Value Moved Here hatası alınır
+
+## Soru 12
+
+Rust’ın güçlü bir paket yönetim sistemi vardır. Yardımcı küfeler **Crates.io** portali üzerinde yayınlanır. **rand**, **tokio**, **serde** gibi birçok araç vardır. Aşağıdaki komutlardan hangisi bir rust projesine doğru şekilde paket ekler.
+
+**a)** cargo add tokio -F full
+
+**b)** cargo expand with tokio
+
+**c)** add crate tokio
+
+**d)** crate add tokio
+
+## Soru 13
+
+**Thread**’ ler arasında veri transferi için kanallar _(channels)_ kullanılır. Rust standart kütüphanesi varsayılan olarak **Multi-Producer Single Consumer _(MPSC)_** modelini kullanır. Aşağıdaki örnek kod parçasında örnek bir kanal kullanımı ele alınmaktadır. Bu programın çıktısı şıklardan hangisinde doğru şekilde açıklanmıştır.
+
+```rust
+use std::sync::mpsc::channel;
+use std::thread;
+use std::time::Duration;
+
+use rand::Rng;
+
+fn main() {
+    process_reports();
+}
+
+pub fn process_reports() {
+    let (transmitter, receiver) = channel();
+
+    let reports = [
+        "salary.json",
+        "invoices.json",
+        "summary.json",
+        "personnel.json",
+    ];
+
+    for report in reports {
+        let transmitter = transmitter.clone();
+        thread::spawn(move || {
+            let mut rng = rand::thread_rng();
+            let sleep_time = rng.gen_range(2..=5);
+            transmitter
+                .send(format!("Processing '{}' report...", report))
+                .unwrap();
+
+            thread::sleep(Duration::from_secs(sleep_time));
+
+            transmitter
+                .send(format!(
+                    "Finished processing '{}' in {} seconds",
+                    report, sleep_time
+                ))
+                .unwrap();
+        });
+    }
+
+    drop(transmitter);
+    println!("Started the processing reports");
+    for result in receiver {
+        println!("Status {}", result);
+    }
+    println!("Completed the processing reports");
+}
+```
+
+**a)** Transmitter nesnesi klonlanmasına rağmen value moved here hatası oluşmasına neden olur, bu yüzden kod derlenmez.
+
+**b)** thread :sleep metodu ile gerçekleşen duraksama ana thread’ in kilitlenmesine neden olacağından deadlock durumu oluşur
+
+**c)** Program rapor dosyalarını sıralı olarak ele alan thread’ ler başlatır. Dosya işlemleri sembolik olarak rastgele üretilen sürelerde tamamlanır, işlem sonuçları kanal üzerinden yakalanır ve durumları ekrana basılır.
+
+**d)** Program rapor dosyalarını sistemde bulamayacağından FileNotFoundException vererek sonlanır.
+
+## Soru 14
+
+Rust dilinde **meta programlama** yetkinlikleri için **makrolar** yaygın şekilde kullanılır. Makrolar yardımıyla kod tekrarları azaltılabilir, daha okunabilir kodlar oluşturulabilir, derleme zamanında kaynak kod üzerinde değişiklikler yapılabilir.
+
+```rust
+macro_rules! create{
+    ($struct_name:ident, $($field_name:ident: $field_type:ty),*) => {
+        #[derive(Debug)]
+        struct $struct_name {
+            $(
+                $field_name: $field_type,
+            )*
+        }
+
+        impl $struct_name {
+            fn new($($field_name: $field_type),*) -> $struct_name {
+                $struct_name { $($field_name),* }
+            }
+        }
+    };
+}
+```
+
+Yukarıda örnek bir makro tanımı yer almaktadır. Aşağıdaki şıklardan hangisi bu makronun doğru kullanımıdır?
+
+**a)** create!::new(Product, id: i16, title: String, unit_price:double, category: String);
+
+**b)** create{name:Product,{id: i16, title: String, unit_price: f32, category: String}};
+
+**c)** $field_name identifier şeklinde kullanılamaz bu nedenle kod derlenmez
+
+**d)** create!(Product, id: i16, title: String, unit_price: f32, category: String);
+
+## Soru 15
+
+Makrolar, Declarative ve Procedural olmak üzere iki ana katgoriye ayrılır. Bu enstrümanlarla ilgili olarak aşağıdaki seçeneklerde bahsedilen kavramlardan hangisi/hangileri doğrudur?
+
+- **I.** Declarative makrolar hızlıdır ve derleme zamanına etkisi minimal seviyededir ancak Procedural makrolar derleme sürelerinin artmasına neden olur.
+- **II.** Procedural makrolar proc-macro olarak adlandırılan ayrı kütüphaneler içerisinde tasarlanır ve dilin sentaksını anlamak için TokenStream’ ler kullanılır.
+- **III.** Procedural makrolar derive direktifi ile birlikte kullanılabilirler.
+- **IV.** Declarative makrolar macro_rules! makrosu ile oluşturulurlar.
+
+**a)** Sadece IV
+
+**b)** I, II, III
+
+**c)** Hepsi doğrudur
+
+**d)** II ve IV
+
+## Soru 16
+
+Rust eş zamanlı programlama haricinde **asenkron** programlamayı da destekler. Asenkron programlama dosya I/O işlemleri, network stream operasyonları, zaman bazlı görevler ve servis iletişimi gibi alanlarda sıklıkla kullanılır. Asenkron görevlerde **async** ve **await** operatörleri yer alır. Asenkron yapılarda genellikle bir yürütücü mekanizma olur. **Tokio** küfesi bu amaçla kullanılan harici küfelerdendir. Aşağıda bu kabiliyet ile ilgili örnek bir kod parçası verilmiştir. 
+
+```rust
+use rand::Rng;
+use std::time::Duration;
+use tokio::sync::mpsc;
+use tokio::task;
+use tokio::time::sleep;
+
+#[tokio::main]
+async fn main() {
+    let (log_transmitter, mut log_receiver) = mpsc::channel(100);
+
+    let cpu_task = task::spawn(fetch_metrics("CPU Service", log_transmitter.clone()));
+    let memory_task = task::spawn(fetch_metrics("Memory Service", log_transmitter.clone()));
+    let disk_task = task::spawn(fetch_metrics("Disk Service", log_transmitter));
+
+    let logger_task = task::spawn(async move {
+        while let Some(metric) = log_receiver.recv().await {
+            println!("LOG: {}", metric);
+        }
+    });
+
+    let _ = tokio::join!(cpu_task, memory_task, disk_task, logger_task);
+}
+
+async fn fetch_metrics(service_name: &str, tx: mpsc::Sender<String>) {
+    let interval = Duration::from_secs(5);
+    for i in 1..=10 {
+        let metric = format!("{} - Metric {}: {}", service_name, i, get_metric());
+        if tx.send(metric).await.is_err() {
+            println!("{}: Channel isn't active!", service_name);
+            break;
+        }
+        sleep(interval).await;
+    }
+}
+
+fn get_metric() -> f64 {
+    let mut rng = rand::rng();
+    rng.random_range(50.0..100.0)
+}
+```
+
+Yukarıdaki kod parçası ile ilgili olarak aşağıda verilen bilgilerden hangisi **yanlıştır**?
+
+**a)** Kodda başlatılan görevler(task) fetch_metrics isimli fonksiyonu işletirler.
+
+**b)** Concurrent başlatılan görevler Sender nesnesini kullanarak kanala metric bilgilerini bırakırlar.
+
+**c)** logger_task isimli değişken farklı bir asenkron görevi işletir ve kanala gelen metrik değerleri Receiver nesnesi aracılığıyla okuyarak ekrana yazdırır.
+
+**d)** Concurrent başlatılan görevler birbirine bekler konumda kalan thread’ler oluşmasına sebep olur ve bu durum çalışma zamanında deadlock oluşmasına sebebiyet verir.
