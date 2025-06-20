@@ -332,4 +332,131 @@ Yukarıdaki kod derleme zamanında **error[E0391]: cycle detected when computing
 
 ## Soru 8
 
+Rust standart kütüphanesi birçok **smart pointer** türü içerir. Bunlar **Box<T>**, **Rc<T>**, **RefCell<T>**, **Ref<T>** ve **RefMut<T>** şeklinde kategorize edilir. Aşağıda birkaç senaryo belirtilmiştir. Hangi senaryo için hangi smart pointer kullanılmalıdır. Şıklarda doğru sıralamayı seçerek cevaplayınız.
+
+- **I.** Birden fazla sahipliği _(ownership)_ tek bir veri üzerinde sağlamak.
+- **II.** Aynı veri üzerinden birden fazla sahiplik sağlamak
+- **III.** Aynı veriye farklı iş parçacıkları _(threads)_ erişim söz konusu olduğunda.
+
+**a)** RefMut, RefCell, Ref
+
+**b)** Box/RefCell, Rc, Arc
+
+**c)** Box, Box, Box
+
+**d)** Arc, Mutex, RefCell
+
+## Soru 9
+
+Birden fazla işi farklı iş parçacıklarına _(thread)_ bölerek çalıştırmak mümkündür. Böylece işlemci/çekirdek gücünden efektif şekilde yararlanılabilir. Rust tarafında hem paralel hem de concurrent _(eş zamanlı)_ programlama için birçok hazır enstrüman bulunur. Bir iş parçacığını başlatmak için **thread** modülünün **spawn** metodu kullanılır. Buna göre aşağıdaki kodun çalışma zamanı çıktısı şıklardan hangisidir?
+
+```rust
+use std::thread;
+
+fn main() {
+    do_something();
+    println!("After the thread calling");
+}
+
+pub fn do_something() {
+    let student_points = vec![30.50, 49.90, 65.55, 90.00, 81.00];
+    let handle = thread::spawn(|| {
+        println!("Thread is starting...");
+        println!("{:?}", student_points);
+        println!("Thread completed");
+    });
+    handle.join().unwrap();
+}
+```
+
+**a)** Bu kod derlenmez ve error[E0373]: closure may outlive the current function, but it borrows `student_points`, which is owned by the current function mesajını içeren bir hata fırlatır.
+
+**b)**
+```text
+Thread is starting...
+[30.5, 49.9, 65.55, 90.0, 81.0]
+Thread completed
+After the thread calling
+```
+
+**c)**
+```text
+After the thread calling
+Thread is starting...
+[30.5, 49.9, 65.55, 90.0, 81.0]
+Thread completed
+```
+
+**d)**
+```text
+Thread is starting...
+Thread completed
+After the thread calling
+```
+
+## Soru 10
+
+Aşağıda örnek bir kod parçası verilmiştir.
+
+```rust
+use std::thread;
+
+fn main() {
+    run_with_error();
+    println!("After the thread calling");
+}
+
+pub fn run_with_error() {
+    let data = vec![
+        "Service Red: Task A",
+        "Service Blue: Task B",
+        "Service Green: Task C",
+        "Service Alpha: Task D",
+    ];
+
+    let mut handles = vec![];
+    for i in 0..2 {
+        let handle = thread::spawn(move || {
+            for task in &data {
+                println!("Thread '{}' is processing '{}'", i, task);
+            }
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+}
+```
+
+Kod derleme zamanında aşağıdaki hatayı vermektedir.
+
+```text
+error[E0382]: use of moved value: `data`
+  --> practices\src\main.rs:18:36
+   |
+9  |     let data = vec![
+   |         ---- move occurs because `data` has type `Vec<&str>`, which does not implement the `Copy` trait
+...
+17 |     for i in 0..2 {
+   |     ------------- inside of this loop
+18 |         let handle = thread::spawn(move || {
+   |                                    ^^^^^^^ value moved into closure here, in previous iteration of loop
+19 |             for task in &data {
+   |                          ---- use occurs due to use in closure
+```
+
+Aynı anda birden fazla iş parçacığı _(thread)_ ortak bir referansa erişmeye çalışmakta ve referans sahipliği **closure** içerisine alındıktan sonra düşeceği _(drop)_ için bu sorun oluşmaktadır. Problemi çözmek için şıklardan hangisini uygularsınız?
+
+**a)** Data vector yerine referans türlü bir diziye alınırsa sorun çözülür.
+
+**b)** Data Arc (Atomic Reference Counting) smart pointer nesnesi içinde ele alınmalı ve döngüde açılan her bir thread örneği klonlanarak paylaşılmalıdır
+
+**c)** data vektörü her thread::spawn çağrısında yeniden tanımlanmalıdır. Böylece her thread kendi data kopyasına sahip olur ve ownership sorunu yaşanmaz.
+
+**d)** Closure bloğu içine data değişkeni move olmadan geçirilirse, tüm thread’ler ortak referansı kullanabilir.
+
+## Soru 11
 
