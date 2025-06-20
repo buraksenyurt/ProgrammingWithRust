@@ -25,7 +25,7 @@ yer aldığı repodur.
         - [Birim Test](UnitTests.md)
         - [Hata Yönetimi](ErrorHandling.md)
         - [Temel I/O İşlemleri](IO.md)
-    - [Final Sınavı]()
+    - [Final Sınavı](FinalExam.md)
 - [Yardımcı Kaynaklar](#yardımcı-kaynaklar)
 - [Örnek Uygulamalar](#örnek-uygulamalar)
 
